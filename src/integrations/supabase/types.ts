@@ -70,6 +70,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved: boolean
           created_at: string
           email: string | null
           full_name: string | null
@@ -85,6 +86,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved?: boolean
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -100,6 +102,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved?: boolean
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -142,6 +145,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_user: {
+        Args: { _approved: boolean; _user_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
