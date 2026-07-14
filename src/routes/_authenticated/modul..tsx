@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Printer, Download, Loader2, AlertTriangle } from "lucide-react";
 import jsPDF from "jspdf";
 
-export const Route = createFileRoute("/_authenticated/modul/$id")({
+export const Route = createFileRoute("/_authenticated/modul/")({
   component: ModulPage,
   head: () => ({ meta: [{ title: "Pratinjau Modul — ModulAjar" }] }),
 });
