@@ -6,10 +6,6 @@ import { ModulFormSchema, ModulHasilSchema, type ModulHasil } from "./modul-sche
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
 function buildPrompt(form: z.infer<typeof ModulFormSchema>) {
-  return _buildPrompt(form);
-}
-
-function _buildPrompt(form: z.infer<typeof ModulFormSchema>) {
   return `Anda adalah ahli kurikulum Merdeka Belajar untuk sekolah ${form.tingkatSekolah} di Indonesia. Buat draf MODUL AJAR lengkap dalam Bahasa Indonesia formal, aktual, kontekstual, dan sesuai Kurikulum Merdeka (Deep Learning).
 
 DATA MODUL:
