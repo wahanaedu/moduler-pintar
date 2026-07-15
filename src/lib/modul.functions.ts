@@ -28,6 +28,47 @@ ATURAN WAJIB:
 8. Gunakan format teks paragraf yang mudah dibaca, gunakan poin bernomor "1) 2) 3)" bila daftar.`;
 }
 
+function extractJson(raw: string): string | null {
+  if (!raw) return null;
+  const fenced = raw.match(/```json\s*([\s\S]*?)```/i) ?? raw.match(/```\s*([\s\S]*?)```/);
+  const candidate = fenced ? fenced[1] : raw;
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  return candidate.slice(start, end + 1);
+}
+
+function normalizeHasil(partial: Partial<ModulHasil>, jumlahPertemuan: number): ModulHasil {
+  const pertemuanData = (partial.pertemuanData ?? []).map((p, i) => ({
+    pertemuan: p?.pertemuan ?? i + 1,
+    topik: p?.topik ?? "",
+    tujuan: p?.tujuan ?? "",
+    pembuka: p?.pembuka ?? "",
+    inti: p?.inti ?? "",
+    penutup: p?.penutup ?? "",
+  }));
+  while (pertemuanData.length < jumlahPertemuan) {
+    const i = pertemuanData.length;
+    pertemuanData.push({ pertemuan: i + 1, topik: "", tujuan: "", pembuka: "", inti: "", penutup: "" });
+  }
+  return {
+    judulModul: partial.judulModul ?? "",
+    asesmenAwal: partial.asesmenAwal ?? "",
+    dimensiProfilLulusan: partial.dimensiProfilLulusan ?? "",
+    tujuanPembelajaran: partial.tujuanPembelajaran ?? "",
+    pemahamanBermakna: partial.pemahamanBermakna ?? "",
+    pertanyaanPemantik: partial.pertanyaanPemantik ?? "",
+    pertemuanData,
+    asesmenFormatif: partial.asesmenFormatif ?? "",
+    asesmenSumatif: partial.asesmenSumatif ?? "",
+    refleksiGuru: partial.refleksiGuru ?? "",
+    refleksiSiswa: partial.refleksiSiswa ?? "",
+    lkpdData: partial.lkpdData ?? [],
+    kuisData: partial.kuisData ?? [],
+    rubrikData: partial.rubrikData ?? [],
+  };
+}
+
 export const generateModul = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ModulFormSchema.parse(input))
