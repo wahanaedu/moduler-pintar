@@ -183,9 +183,43 @@ export const generateModul = createServerFn({ method: "POST" })
         }
       }
 
+      // Completeness check: jika ada field wajib yang masih kosong/terlalu pendek,
+      // minta AI melengkapi sekali lagi dengan konteks hasil saat ini.
+      const missing = findMissingFields(hasil, data.jumlahPertemuan);
+      if (missing.length > 0) {
+        try {
+          const fixPrompt = `${buildPrompt(data)}
+
+DRAF SAAT INI MASIH KURANG LENGKAP. Field / bagian berikut MASIH KOSONG atau terlalu pendek dan WAJIB DIISI ULANG SECARA PENUH, kontekstual, dan konsisten dengan Materi "${data.materi}":
+${missing.map((m) => `- ${m}`).join("\n")}
+
+Kembalikan SELURUH objek modul ajar (bukan hanya field yang kurang) dengan semua field terisi utuh sesuai instruksi di atas. Draf sebelumnya (jangan diulang mentah, perbaiki & lengkapi):
+${JSON.stringify(hasil).slice(0, 6000)}`;
+          const { output } = await generateText({
+            model,
+            output: Output.object({ schema: ModulHasilSchema }),
+            prompt: fixPrompt,
+          });
+          const refined = output as ModulHasil;
+          if (refined.pertemuanData.length > data.jumlahPertemuan) {
+            refined.pertemuanData = refined.pertemuanData.slice(0, data.jumlahPertemuan);
+          }
+          const stillMissing = findMissingFields(refined, data.jumlahPertemuan);
+          if (stillMissing.length < missing.length) hasil = refined;
+        } catch {
+          // Diamkan; tetap simpan hasil awal agar user tidak kehilangan draf.
+        }
+      }
+
       await context.supabase
         .from("moduls")
-        .update({ hasil, status: "ready", error_message: null })
+        .update({
+          hasil,
+          status: "ready",
+          error_message: findMissingFields(hasil, data.jumlahPertemuan).length
+            ? `Beberapa bagian mungkin belum lengkap: ${findMissingFields(hasil, data.jumlahPertemuan).slice(0, 5).join(", ")}`
+            : null,
+        })
         .eq("id", draft.id);
 
       return { id: draft.id, hasil };
