@@ -18,13 +18,28 @@ export const Route = createFileRoute("/_authenticated/modul/$id")({
 function ModulPage() {
   const { id } = Route.useParams();
   const fetchOne = useServerFn(getModul);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["modul", id],
     queryFn: () => fetchOne({ data: { id } }),
+    retry: false,
   });
 
   if (isLoading) return <div className="flex items-center justify-center py-24 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2" />Memuat…</div>;
-  if (!data) return <div className="text-center py-24">Modul tidak ditemukan.</div>;
+  if (error || !data) {
+    return (
+      <Card className="border-destructive/40 max-w-lg mx-auto">
+        <CardContent className="p-8 text-center space-y-4">
+          <AlertTriangle className="h-10 w-10 text-destructive mx-auto" />
+          <h2 className="font-serif text-2xl font-bold">Modul Tidak Dapat Diakses</h2>
+          <p className="text-muted-foreground">
+            Modul ini tidak ditemukan atau dibuat oleh akun lain. Setiap modul hanya bisa dibuka
+            oleh akun yang membuatnya.
+          </p>
+          <Link to="/dashboard"><Button variant="outline"><ArrowLeft className="h-4 w-4 mr-1.5" />Kembali ke Dasbor</Button></Link>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (data.status === "failed") {
     return (
