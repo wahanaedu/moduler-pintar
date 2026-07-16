@@ -90,6 +90,39 @@ function normalizeHasil(partial: Partial<ModulHasil>, jumlahPertemuan: number): 
   };
 }
 
+function tooShort(s: string | undefined, min = 20): boolean {
+  return !s || s.trim().length < min;
+}
+
+function findMissingFields(h: ModulHasil, jumlahPertemuan: number): string[] {
+  const missing: string[] = [];
+  if (tooShort(h.judulModul, 8)) missing.push("judulModul");
+  if (tooShort(h.asesmenAwal, 40)) missing.push("asesmenAwal");
+  if (tooShort(h.dimensiProfilLulusan, 40)) missing.push("dimensiProfilLulusan");
+  if (tooShort(h.tujuanPembelajaran, 40)) missing.push("tujuanPembelajaran");
+  if (tooShort(h.pemahamanBermakna, 30)) missing.push("pemahamanBermakna");
+  if (tooShort(h.pertanyaanPemantik, 30)) missing.push("pertanyaanPemantik");
+  if (tooShort(h.asesmenFormatif, 40)) missing.push("asesmenFormatif");
+  if (tooShort(h.asesmenSumatif, 40)) missing.push("asesmenSumatif");
+  if (tooShort(h.refleksiGuru, 30)) missing.push("refleksiGuru");
+  if (tooShort(h.refleksiSiswa, 30)) missing.push("refleksiSiswa");
+  h.pertemuanData.forEach((p, i) => {
+    if (tooShort(p.topik, 4) || tooShort(p.tujuan, 15) || tooShort(p.pembuka, 30) || tooShort(p.inti, 60) || tooShort(p.penutup, 30)) {
+      missing.push(`pertemuanData[${i + 1}]`);
+    }
+  });
+  if (h.lkpdData.length < jumlahPertemuan) missing.push("lkpdData(jumlah)");
+  h.lkpdData.forEach((l, i) => {
+    if (tooShort(l.judul, 4) || tooShort(l.petunjuk, 20) || tooShort(l.aktivitas, 40)) missing.push(`lkpdData[${i + 1}]`);
+  });
+  if (h.kuisData.length < 5) missing.push("kuisData(<5)");
+  if (h.rubrikData.length < 4) missing.push("rubrikData(<4)");
+  h.rubrikData.forEach((r, i) => {
+    if (tooShort(r.sangatBaik, 10) || tooShort(r.baik, 10) || tooShort(r.cukup, 10) || tooShort(r.perluBimbingan, 10)) missing.push(`rubrikData[${i + 1}]`);
+  });
+  return missing;
+}
+
 export const generateModul = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ModulFormSchema.parse(input))
