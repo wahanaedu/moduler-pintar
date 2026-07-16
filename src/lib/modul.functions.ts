@@ -5,7 +5,9 @@ import { z } from "zod";
 import { ModulFormSchema, ModulHasilSchema, type ModulHasil } from "./modul-schema";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
-function buildPrompt(form: z.infer<typeof ModulFormSchema>) {
+type ModulFormInput = z.infer<typeof ModulFormSchema>;
+
+function buildPrompt(form: ModulFormInput) {
   return `Anda adalah ahli kurikulum Merdeka Belajar (Deep Learning) untuk sekolah ${form.tingkatSekolah} di Indonesia. Susun MODUL AJAR yang LENGKAP, KONTEKSTUAL, dan SIAP PAKAI dalam Bahasa Indonesia formal. Semua isi HARUS relevan dan konsisten dengan Materi Pokok dan Tujuan Pembelajaran; bukan sekadar template kosong.
 
 DATA MODUL:
@@ -25,7 +27,8 @@ INSTRUKSI ISI TIAP FIELD (semua wajib terisi konten nyata, minimal 2–4 kalimat
 4. tujuanPembelajaran: 3–5 tujuan operasional (audience-behavior-condition-degree), pakai KKO Bloom yang bervariasi (C2–C5), semuanya membahas "${form.materi}". Nomori 1) 2) 3).
 5. pemahamanBermakna: 2–3 kalimat berisi big idea/konsep esensial dari "${form.materi}" yang relevan dengan kehidupan siswa.
 6. pertanyaanPemantik: 3 pertanyaan pemantik terbuka yang provokatif dan spesifik terhadap "${form.materi}". Nomori 1) 2) 3).
-7. pertemuanData: TEPAT ${form.jumlahPertemuan} objek berurutan 1..${form.jumlahPertemuan}. Setiap pertemuan HARUS berbeda topik/sub-materi dan bertahap (scaffolded) menuju penguasaan "${form.materi}".
+7. pertemuanData: TEPAT ${form.jumlahPertemuan} objek berurutan 1..${form.jumlahPertemuan}. Setiap objek WAJIB punya field pertemuan berupa angka (1, 2, 3, dst.). Setiap pertemuan HARUS berbeda topik/sub-materi dan bertahap (scaffolded) menuju penguasaan "${form.materi}".
+   - pertemuan: angka urut pertemuan, bukan teks.
    - topik: sub-materi konkret pada pertemuan itu.
    - tujuan: 1–2 tujuan khusus pertemuan itu, KKO operasional, TURUNAN dari tujuanPembelajaran.
    - pembuka (5–10 menit): salam, doa, apersepsi terkait sub-materi, penyampaian tujuan, pemantik singkat. Tulis sebagai langkah bernomor 1) 2) 3).
@@ -35,18 +38,20 @@ INSTRUKSI ISI TIAP FIELD (semua wajib terisi konten nyata, minimal 2–4 kalimat
 9. asesmenSumatif: bentuk asesmen akhir (tes tulis / proyek / produk), cakupan indikator, dan cara penskoran ringkas.
 10. refleksiGuru: 4–5 pertanyaan refleksi untuk guru sesudah mengajar "${form.materi}" (efektivitas strategi, kendala, tindak lanjut). Nomori.
 11. refleksiSiswa: 4–5 pertanyaan refleksi bahasa siswa tentang pengalaman belajar "${form.materi}". Nomori.
-12. lkpdData: TEPAT ${form.jumlahPertemuan} LKPD (1 per pertemuan, sesuai sub-materi pertemuan itu).
+12. lkpdData: TEPAT ${form.jumlahPertemuan} LKPD (1 per pertemuan, sesuai sub-materi pertemuan itu). Setiap objek WAJIB punya field pertemuan berupa angka.
+    - pertemuan: angka urut pertemuan, bukan teks.
     - judul: menyebut sub-materi pertemuan.
     - petunjuk: langkah bernomor yang jelas untuk siswa.
     - aktivitas: soal / tugas / instruksi kerja spesifik (bukan "kerjakan soal berikut"). Sertakan minimal 3 butir aktivitas/pertanyaan konkret terkait sub-materi.
-13. kuisData: MINIMAL 5 pertanyaan sumatif konkret tentang "${form.materi}" (variasi tingkat kognitif C2–C5), tiap item punya kunci JAWABAN LENGKAP (bukan hanya A/B/C), bernomor mulai 1.
+13. kuisData: MINIMAL 5 pertanyaan sumatif konkret tentang "${form.materi}" (variasi tingkat kognitif C2–C5), tiap item WAJIB punya field nomor berupa angka dan kunci JAWABAN LENGKAP (bukan hanya A/B/C), bernomor mulai 1.
 14. rubrikData: MINIMAL 4 kriteria penilaian yang RELEVAN dengan tujuan pembelajaran "${form.materi}" (mis. Ketepatan Konsep, Kolaborasi, Komunikasi, Produk). Tiap kriteria WAJIB memiliki 4 deskriptor tingkat yang berbeda dan spesifik: sangatBaik, baik, cukup, perluBimbingan (masing-masing 1–2 kalimat deskriptif, bukan "sangat baik" saja).
 
 ATURAN UMUM:
 - Semua field wajib terisi. Tidak boleh string kosong, "-", "…", atau "akan ditentukan".
 - Konsistenkan seluruh isi dengan Materi "${form.materi}"; jangan menyimpang ke topik lain.
 - Gunakan format paragraf padat; jika berupa daftar gunakan penanda "1) 2) 3)" di dalam string.
-- Tulis dalam Bahasa Indonesia baku sesuai jenjang ${form.tingkatSekolah} ${form.kelas}.`;
+- Tulis dalam Bahasa Indonesia baku sesuai jenjang ${form.tingkatSekolah} ${form.kelas}.
+- Kembalikan hanya satu objek JSON yang valid sesuai nama field yang diminta, tanpa markdown dan tanpa penjelasan tambahan.`;
 }
 
 function extractJson(raw: string): string | null {
@@ -59,35 +64,169 @@ function extractJson(raw: string): string | null {
   return candidate.slice(start, end + 1);
 }
 
-function normalizeHasil(partial: Partial<ModulHasil>, jumlahPertemuan: number): ModulHasil {
-  const pertemuanData = (partial.pertemuanData ?? []).map((p, i) => ({
-    pertemuan: p?.pertemuan ?? i + 1,
-    topik: p?.topik ?? "",
-    tujuan: p?.tujuan ?? "",
-    pembuka: p?.pembuka ?? "",
-    inti: p?.inti ?? "",
-    penutup: p?.penutup ?? "",
-  }));
-  while (pertemuanData.length < jumlahPertemuan) {
-    const i = pertemuanData.length;
-    pertemuanData.push({ pertemuan: i + 1, topik: "", tujuan: "", pembuka: "", inti: "", penutup: "" });
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function textValue(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) return value.map(textValue).filter(Boolean).join("\n").trim();
+  return "";
+}
+
+function pickText(fallback: string, ...values: unknown[]): string {
+  for (const value of values) {
+    const text = textValue(value);
+    if (text) return text;
   }
+  return fallback;
+}
+
+function pickNumber(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) return Math.trunc(value);
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value.replace(/\D/g, ""), 10);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+}
+
+function createFallbackHasil(form: ModulFormInput): ModulHasil {
+  const pertemuanData = Array.from({ length: form.jumlahPertemuan }, (_, i) => {
+    const pertemuan = i + 1;
+    return {
+      pertemuan,
+      topik: `${form.materi} — tahap ${pertemuan}`,
+      tujuan: `Peserta didik mampu menjelaskan dan menerapkan konsep ${form.materi} pada latihan kontekstual sesuai jenjang ${form.kelas}.`,
+      pembuka: `1) Guru membuka pembelajaran dengan salam dan doa. 2) Guru mengaitkan pengalaman sehari-hari siswa dengan ${form.materi}. 3) Guru menyampaikan tujuan dan pertanyaan pemantik untuk pertemuan ${pertemuan}.`,
+      inti: `1) Orientasi masalah: guru menyajikan contoh kasus tentang ${form.materi}. 2) Mengorganisasi belajar: siswa bekerja berpasangan/kelompok untuk mengidentifikasi informasi penting. 3) Membimbing penyelidikan: siswa mengerjakan latihan bertahap dan guru memberi umpan balik. 4) Mengembangkan hasil: siswa menyusun jawaban/produk sederhana. 5) Menganalisis proses: kelas membahas strategi yang tepat dan memperbaiki miskonsepsi.`,
+      penutup: `1) Siswa dan guru menyimpulkan konsep penting ${form.materi}. 2) Siswa menulis refleksi singkat tentang hal yang sudah dipahami. 3) Guru memberi tindak lanjut berupa latihan rumah atau persiapan pertemuan berikutnya.`,
+    };
+  });
+
+  const lkpdData = pertemuanData.map((p) => ({
+    pertemuan: p.pertemuan,
+    judul: `LKPD ${p.topik}`,
+    petunjuk: `1) Bacalah instruksi dengan teliti. 2) Diskusikan contoh ${form.materi} bersama kelompok. 3) Tuliskan jawaban lengkap dan alasanmu.`,
+    aktivitas: `1) Amati contoh/kasus tentang ${form.materi}. 2) Identifikasi informasi penting dan konsep yang digunakan. 3) Selesaikan tugas latihan, lalu jelaskan langkah atau alasan jawabanmu.`,
+  }));
+
   return {
-    judulModul: partial.judulModul ?? "",
-    asesmenAwal: partial.asesmenAwal ?? "",
-    dimensiProfilLulusan: partial.dimensiProfilLulusan ?? "",
-    tujuanPembelajaran: partial.tujuanPembelajaran ?? "",
-    pemahamanBermakna: partial.pemahamanBermakna ?? "",
-    pertanyaanPemantik: partial.pertanyaanPemantik ?? "",
+    judulModul: `Modul Ajar ${form.materi}`,
+    asesmenAwal: `Guru melakukan asesmen diagnostik awal melalui tanya jawab dan kuis singkat tentang ${form.materi}. Contoh pertanyaan: 1) Apa yang sudah kamu ketahui tentang ${form.materi}? 2) Bagian mana yang menurutmu paling mudah? 3) Bagian mana yang masih membingungkan? 4) Berikan contoh penerapan ${form.materi} dalam kehidupan sehari-hari. Hasil asesmen dipakai untuk mengelompokkan kebutuhan belajar siswa.`,
+    dimensiProfilLulusan: `Dimensi ${form.profilLulusan.join(", ")} dikembangkan melalui aktivitas memahami, mendiskusikan, dan menyajikan pemecahan masalah terkait ${form.materi}. Guru mengamati kemampuan siswa bertanya, memberi alasan, bekerja sama, dan menyelesaikan tugas secara bertanggung jawab.`,
+    tujuanPembelajaran: `1) Peserta didik mampu menjelaskan konsep utama ${form.materi} dengan bahasa sendiri. 2) Peserta didik mampu menerapkan konsep ${form.materi} pada contoh soal atau situasi kontekstual. 3) Peserta didik mampu menganalisis kesalahan umum dan memperbaiki strategi penyelesaian terkait ${form.materi}.`,
+    pemahamanBermakna: `${form.materi} membantu peserta didik memahami konsep yang berguna dalam kegiatan belajar dan kehidupan sehari-hari. Dengan menguasai materi ini, siswa dapat berpikir lebih runtut, teliti, dan mampu menjelaskan alasan dari setiap jawaban atau keputusan.`,
+    pertanyaanPemantik: `1) Kapan kamu pernah menemukan contoh ${form.materi} dalam kehidupan sehari-hari? 2) Mengapa memahami ${form.materi} penting untuk menyelesaikan masalah? 3) Strategi apa yang dapat digunakan agar tidak keliru saat mempelajari ${form.materi}?`,
     pertemuanData,
-    asesmenFormatif: partial.asesmenFormatif ?? "",
-    asesmenSumatif: partial.asesmenSumatif ?? "",
-    refleksiGuru: partial.refleksiGuru ?? "",
-    refleksiSiswa: partial.refleksiSiswa ?? "",
-    lkpdData: partial.lkpdData ?? [],
-    kuisData: partial.kuisData ?? [],
-    rubrikData: partial.rubrikData ?? [],
+    asesmenFormatif: `Asesmen formatif dilakukan melalui observasi diskusi, pemeriksaan LKPD, dan exit ticket tentang ${form.materi}. Indikator yang diamati meliputi ketepatan konsep, kejelasan alasan, keaktifan bertanya/menjawab, dan kemampuan memperbaiki kesalahan setelah mendapat umpan balik.`,
+    asesmenSumatif: `Asesmen sumatif berupa tes tertulis atau produk sederhana yang mengukur pemahaman ${form.materi}. Penskoran memperhatikan ketepatan konsep, kelengkapan langkah, kejelasan penjelasan, dan kemampuan menerapkan konsep pada konteks baru.`,
+    refleksiGuru: `1) Apakah tujuan pembelajaran ${form.materi} tercapai? 2) Bagian mana yang paling sulit dipahami siswa? 3) Strategi apa yang paling efektif membantu siswa? 4) Siswa mana yang memerlukan pengayaan atau pendampingan? 5) Perbaikan apa yang perlu dilakukan pada pertemuan berikutnya?`,
+    refleksiSiswa: `1) Apa hal baru yang saya pahami tentang ${form.materi}? 2) Bagian mana yang masih membingungkan? 3) Strategi belajar apa yang membantu saya hari ini? 4) Bagaimana saya dapat menggunakan materi ini di kehidupan sehari-hari?`,
+    lkpdData,
+    kuisData: Array.from({ length: 5 }, (_, i) => ({
+      nomor: i + 1,
+      pertanyaan: `Pertanyaan ${i + 1}: Jelaskan atau selesaikan contoh masalah yang berkaitan dengan ${form.materi}.`,
+      jawaban: `Jawaban dinilai benar jika memuat konsep ${form.materi}, langkah yang runtut, dan alasan yang sesuai dengan konteks soal.`,
+    })),
+    rubrikData: [
+      ["Ketepatan Konsep", "Menjelaskan konsep dengan tepat, lengkap, dan mampu memberi contoh relevan.", "Menjelaskan konsep dengan tepat meskipun contoh masih terbatas.", "Menjelaskan sebagian konsep namun masih terdapat kekeliruan kecil.", "Masih memerlukan bimbingan untuk memahami konsep dasar."],
+      ["Proses Penyelesaian", "Langkah kerja sangat runtut, logis, dan mandiri.", "Langkah kerja runtut dengan sedikit arahan.", "Langkah kerja sebagian benar tetapi belum konsisten.", "Langkah kerja belum runtut dan membutuhkan pendampingan intensif."],
+      ["Komunikasi", "Menyampaikan ide secara jelas, lengkap, dan menggunakan istilah yang sesuai.", "Menyampaikan ide dengan cukup jelas dan mudah dipahami.", "Menyampaikan ide secara singkat namun belum lengkap.", "Masih kesulitan menyampaikan ide atau alasan jawaban."],
+      ["Kolaborasi dan Sikap", "Aktif membantu kelompok, menghargai pendapat, dan bertanggung jawab.", "Bekerja sama dengan baik dan menyelesaikan tugas.", "Bekerja sama tetapi masih perlu diingatkan untuk fokus.", "Masih memerlukan bimbingan untuk berpartisipasi dalam kelompok."],
+    ].map(([kriteria, sangatBaik, baik, cukup, perluBimbingan]) => ({ kriteria, sangatBaik, baik, cukup, perluBimbingan })),
   };
+}
+
+function normalizeHasil(partial: unknown, form: ModulFormInput): ModulHasil {
+  const source = asRecord(partial);
+  const fallback = createFallbackHasil(form);
+  const rawPertemuan = asArray(source.pertemuanData);
+  const pertemuanData = Array.from({ length: form.jumlahPertemuan }, (_, i) => {
+    const row = asRecord(rawPertemuan[i]);
+    const base = fallback.pertemuanData[i];
+    return {
+      pertemuan: pickNumber(row.pertemuan, i + 1),
+      topik: pickText(base.topik, row.topik, row.subMateri, row.materi),
+      tujuan: pickText(base.tujuan, row.tujuan, row.tujuanPembelajaran),
+      pembuka: pickText(base.pembuka, row.pembuka, row.kegiatanPembuka),
+      inti: pickText(base.inti, row.inti, row.kegiatanInti),
+      penutup: pickText(base.penutup, row.penutup, row.kegiatanPenutup),
+    };
+  });
+
+  const rawLkpd = asArray(source.lkpdData);
+  const lkpdData = Array.from({ length: form.jumlahPertemuan }, (_, i) => {
+    const row = asRecord(rawLkpd[i]);
+    const base = fallback.lkpdData[i];
+    return {
+      pertemuan: pickNumber(row.pertemuan, i + 1),
+      judul: pickText(base.judul, row.judul, row.title),
+      petunjuk: pickText(base.petunjuk, row.petunjuk, row.instruksi),
+      aktivitas: pickText(base.aktivitas, row.aktivitas, row.tugas, row.pertanyaan),
+    };
+  });
+
+  const kuisData = asArray(source.kuisData)
+    .map((item, i) => {
+      const row = asRecord(item);
+      return {
+        nomor: pickNumber(row.nomor, i + 1),
+        pertanyaan: pickText("", row.pertanyaan, row.soal, row.question),
+        jawaban: pickText("", row.jawaban, row.kunciJawaban, row.answer),
+      };
+    })
+    .filter((item) => item.pertanyaan || item.jawaban);
+  while (kuisData.length < 5) kuisData.push(fallback.kuisData[kuisData.length]);
+
+  const rubrikData = asArray(source.rubrikData)
+    .map((item, i) => {
+      const row = asRecord(item);
+      const base = fallback.rubrikData[i % fallback.rubrikData.length];
+      return {
+        kriteria: pickText(base.kriteria, row.kriteria, row.aspek),
+        sangatBaik: pickText(base.sangatBaik, row.sangatBaik, row["sangat baik"], row.level4),
+        baik: pickText(base.baik, row.baik, row.level3),
+        cukup: pickText(base.cukup, row.cukup, row.level2),
+        perluBimbingan: pickText(base.perluBimbingan, row.perluBimbingan, row["perlu bimbingan"], row.level1),
+      };
+    })
+    .filter((item) => item.kriteria);
+  while (rubrikData.length < 4) rubrikData.push(fallback.rubrikData[rubrikData.length]);
+
+  const normalized: ModulHasil = {
+    judulModul: pickText(fallback.judulModul, source.judulModul, source.judul),
+    asesmenAwal: pickText(fallback.asesmenAwal, source.asesmenAwal, source.asesmenDiagnostik),
+    dimensiProfilLulusan: pickText(fallback.dimensiProfilLulusan, source.dimensiProfilLulusan, source.profilLulusan),
+    tujuanPembelajaran: pickText(fallback.tujuanPembelajaran, source.tujuanPembelajaran, source.tujuan),
+    pemahamanBermakna: pickText(fallback.pemahamanBermakna, source.pemahamanBermakna),
+    pertanyaanPemantik: pickText(fallback.pertanyaanPemantik, source.pertanyaanPemantik),
+    pertemuanData,
+    asesmenFormatif: pickText(fallback.asesmenFormatif, source.asesmenFormatif),
+    asesmenSumatif: pickText(fallback.asesmenSumatif, source.asesmenSumatif),
+    refleksiGuru: pickText(fallback.refleksiGuru, source.refleksiGuru),
+    refleksiSiswa: pickText(fallback.refleksiSiswa, source.refleksiSiswa),
+    lkpdData,
+    kuisData,
+    rubrikData,
+  };
+
+  return ModulHasilSchema.parse(normalized);
+}
+
+function parseRawHasil(raw: string, form: ModulFormInput): ModulHasil | null {
+  const jsonText = extractJson(raw);
+  if (!jsonText) return null;
+  try {
+    return normalizeHasil(JSON.parse(jsonText), form);
+  } catch {
+    return null;
+  }
 }
 
 function tooShort(s: string | undefined, min = 20): boolean {
@@ -162,26 +301,18 @@ export const generateModul = createServerFn({ method: "POST" })
           output: Output.object({ schema: ModulHasilSchema }),
           prompt: buildPrompt(data),
         });
-        hasil = output as ModulHasil;
+        hasil = normalizeHasil(output, data);
       } catch (structuredErr) {
         // Gemini kadang menghasilkan JSON yang tidak persis sesuai schema (mis. field kosong,
         // urutan berbeda). Ambil teks mentah lalu parse manual + validasi longgar.
         if (!NoObjectGeneratedError.isInstance(structuredErr)) throw structuredErr;
         const raw = (structuredErr as { text?: string }).text ?? "";
-        const jsonText = extractJson(raw);
-        if (!jsonText) throw structuredErr;
-        const parsed = JSON.parse(jsonText);
-        hasil = ModulHasilSchema.partial().parse(parsed) as ModulHasil;
-        // Isi default untuk field wajib yang kosong agar UI tidak crash.
-        hasil = normalizeHasil(hasil, data.jumlahPertemuan);
+        const repaired = parseRawHasil(raw, data);
+        if (!repaired) throw structuredErr;
+        hasil = repaired;
       }
 
-      // Validasi jumlah pertemuan
-      if (hasil.pertemuanData.length !== data.jumlahPertemuan) {
-        if (hasil.pertemuanData.length > data.jumlahPertemuan) {
-          hasil = { ...hasil, pertemuanData: hasil.pertemuanData.slice(0, data.jumlahPertemuan) };
-        }
-      }
+      hasil = normalizeHasil(hasil, data);
 
       // Completeness check: jika ada field wajib yang masih kosong/terlalu pendek,
       // minta AI melengkapi sekali lagi dengan konteks hasil saat ini.
@@ -200,13 +331,14 @@ ${JSON.stringify(hasil).slice(0, 6000)}`;
             output: Output.object({ schema: ModulHasilSchema }),
             prompt: fixPrompt,
           });
-          const refined = output as ModulHasil;
-          if (refined.pertemuanData.length > data.jumlahPertemuan) {
-            refined.pertemuanData = refined.pertemuanData.slice(0, data.jumlahPertemuan);
-          }
+          const refined = normalizeHasil(output, data);
           const stillMissing = findMissingFields(refined, data.jumlahPertemuan);
           if (stillMissing.length < missing.length) hasil = refined;
-        } catch {
+        } catch (refineErr) {
+          if (NoObjectGeneratedError.isInstance(refineErr)) {
+            const repaired = parseRawHasil((refineErr as { text?: string }).text ?? "", data);
+            if (repaired && findMissingFields(repaired, data.jumlahPertemuan).length < missing.length) hasil = repaired;
+          }
           // Diamkan; tetap simpan hasil awal agar user tidak kehilangan draf.
         }
       }
