@@ -173,8 +173,13 @@ export const getModul = createServerFn({ method: "POST" })
       .from("moduls")
       .select("*")
       .eq("id", data.id)
-      .single();
+      .maybeSingle();
     if (error) throw new Error(error.message);
+    if (!row) {
+      throw new Error(
+        "Modul tidak ditemukan atau Anda tidak memiliki akses. Coba muat ulang halaman atau login ulang.",
+      );
+    }
     return row;
   });
 
