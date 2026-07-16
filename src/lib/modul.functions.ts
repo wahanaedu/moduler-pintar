@@ -6,26 +6,47 @@ import { ModulFormSchema, ModulHasilSchema, type ModulHasil } from "./modul-sche
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
 function buildPrompt(form: z.infer<typeof ModulFormSchema>) {
-  return `Anda adalah ahli kurikulum Merdeka Belajar untuk sekolah ${form.tingkatSekolah} di Indonesia. Buat draf MODUL AJAR lengkap dalam Bahasa Indonesia formal, aktual, kontekstual, dan sesuai Kurikulum Merdeka (Deep Learning).
+  return `Anda adalah ahli kurikulum Merdeka Belajar (Deep Learning) untuk sekolah ${form.tingkatSekolah} di Indonesia. Susun MODUL AJAR yang LENGKAP, KONTEKSTUAL, dan SIAP PAKAI dalam Bahasa Indonesia formal. Semua isi HARUS relevan dan konsisten dengan Materi Pokok dan Tujuan Pembelajaran; bukan sekadar template kosong.
 
 DATA MODUL:
 - Mata Pelajaran: ${form.mapel}
-- Materi Pokok: ${form.materi}
+- Materi Pokok (WAJIB jadi rujukan utama tiap field): ${form.materi}
 - ${form.kelas} (Fase ${form.fase})
 - Alokasi waktu per pertemuan: ${form.alokasiWaktu}
-- Jumlah pertemuan: TEPAT ${form.jumlahPertemuan} pertemuan
+- Jumlah pertemuan: TEPAT ${form.jumlahPertemuan}
 - Model Pembelajaran: ${form.modelPembelajaran}
 - Dimensi Profil Lulusan Pancasila: ${form.profilLulusan.join(", ")}
 
-ATURAN WAJIB:
-1. \`pertemuanData\` HARUS berisi TEPAT ${form.jumlahPertemuan} objek, bernomor 1..${form.jumlahPertemuan}, tidak boleh kurang/lebih.
-2. Setiap pertemuan: pembuka 5-10 menit, inti 45-60 menit (menggunakan sintaks ${form.modelPembelajaran}), penutup 5-10 menit.
-3. \`lkpdData\`: 1 LKPD per pertemuan (total ${form.jumlahPertemuan}).
-4. \`kuisData\`: minimal 5 pertanyaan sumatif dengan kunci jawaban.
-5. \`rubrikData\`: minimal 4 kriteria penilaian, tiap kriteria memiliki 4 tingkat (Sangat Baik, Baik, Cukup, Perlu Bimbingan) yang deskriptif.
-6. Tujuan pembelajaran menggunakan kata kerja operasional taksonomi Bloom.
-7. Jangan gunakan placeholder seperti "..." atau "TBD". Semua kolom harus terisi konten nyata.
-8. Gunakan format teks paragraf yang mudah dibaca, gunakan poin bernomor "1) 2) 3)" bila daftar.`;
+INSTRUKSI ISI TIAP FIELD (semua wajib terisi konten nyata, minimal 2–4 kalimat kecuali disebut lain; DILARANG placeholder "...", "TBD", "sesuai kebutuhan", atau kalimat generik yang bisa dipakai untuk materi apa pun):
+
+1. judulModul: judul menarik yang menyebut materi "${form.materi}" secara eksplisit.
+2. asesmenAwal: uraikan teknik diagnostik konkret (contoh pertanyaan lisan / kuis pemetaan / observasi) beserta 3–5 CONTOH PERTANYAAN diagnostik spesifik tentang "${form.materi}" untuk memetakan pengetahuan awal peserta didik.
+3. dimensiProfilLulusan: jabarkan tiap dimensi yang dipilih (${form.profilLulusan.join(", ")}) dan JELASKAN indikator perilaku siswa yang akan diamati dalam pembelajaran "${form.materi}".
+4. tujuanPembelajaran: 3–5 tujuan operasional (audience-behavior-condition-degree), pakai KKO Bloom yang bervariasi (C2–C5), semuanya membahas "${form.materi}". Nomori 1) 2) 3).
+5. pemahamanBermakna: 2–3 kalimat berisi big idea/konsep esensial dari "${form.materi}" yang relevan dengan kehidupan siswa.
+6. pertanyaanPemantik: 3 pertanyaan pemantik terbuka yang provokatif dan spesifik terhadap "${form.materi}". Nomori 1) 2) 3).
+7. pertemuanData: TEPAT ${form.jumlahPertemuan} objek berurutan 1..${form.jumlahPertemuan}. Setiap pertemuan HARUS berbeda topik/sub-materi dan bertahap (scaffolded) menuju penguasaan "${form.materi}".
+   - topik: sub-materi konkret pada pertemuan itu.
+   - tujuan: 1–2 tujuan khusus pertemuan itu, KKO operasional, TURUNAN dari tujuanPembelajaran.
+   - pembuka (5–10 menit): salam, doa, apersepsi terkait sub-materi, penyampaian tujuan, pemantik singkat. Tulis sebagai langkah bernomor 1) 2) 3).
+   - inti (45–60 menit): TULIS SINTAKS "${form.modelPembelajaran}" secara eksplisit sebagai tahap bernomor (contoh untuk PBL: 1) Orientasi masalah, 2) Mengorganisasi belajar, dst.). Untuk tiap tahap sebutkan aktivitas guru & siswa yang spesifik dengan sub-materi pertemuan itu.
+   - penutup (5–10 menit): refleksi, kesimpulan bersama, penugasan / info pertemuan berikutnya. Langkah bernomor.
+8. asesmenFormatif: teknik + instrumen (mis. observasi diskusi, exit ticket, presentasi LKPD) beserta contoh indikator penilaian selama proses pembelajaran "${form.materi}".
+9. asesmenSumatif: bentuk asesmen akhir (tes tulis / proyek / produk), cakupan indikator, dan cara penskoran ringkas.
+10. refleksiGuru: 4–5 pertanyaan refleksi untuk guru sesudah mengajar "${form.materi}" (efektivitas strategi, kendala, tindak lanjut). Nomori.
+11. refleksiSiswa: 4–5 pertanyaan refleksi bahasa siswa tentang pengalaman belajar "${form.materi}". Nomori.
+12. lkpdData: TEPAT ${form.jumlahPertemuan} LKPD (1 per pertemuan, sesuai sub-materi pertemuan itu).
+    - judul: menyebut sub-materi pertemuan.
+    - petunjuk: langkah bernomor yang jelas untuk siswa.
+    - aktivitas: soal / tugas / instruksi kerja spesifik (bukan "kerjakan soal berikut"). Sertakan minimal 3 butir aktivitas/pertanyaan konkret terkait sub-materi.
+13. kuisData: MINIMAL 5 pertanyaan sumatif konkret tentang "${form.materi}" (variasi tingkat kognitif C2–C5), tiap item punya kunci JAWABAN LENGKAP (bukan hanya A/B/C), bernomor mulai 1.
+14. rubrikData: MINIMAL 4 kriteria penilaian yang RELEVAN dengan tujuan pembelajaran "${form.materi}" (mis. Ketepatan Konsep, Kolaborasi, Komunikasi, Produk). Tiap kriteria WAJIB memiliki 4 deskriptor tingkat yang berbeda dan spesifik: sangatBaik, baik, cukup, perluBimbingan (masing-masing 1–2 kalimat deskriptif, bukan "sangat baik" saja).
+
+ATURAN UMUM:
+- Semua field wajib terisi. Tidak boleh string kosong, "-", "…", atau "akan ditentukan".
+- Konsistenkan seluruh isi dengan Materi "${form.materi}"; jangan menyimpang ke topik lain.
+- Gunakan format paragraf padat; jika berupa daftar gunakan penanda "1) 2) 3)" di dalam string.
+- Tulis dalam Bahasa Indonesia baku sesuai jenjang ${form.tingkatSekolah} ${form.kelas}.`;
 }
 
 function extractJson(raw: string): string | null {
