@@ -263,12 +263,7 @@ export const getModul = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!row) {
-      throw new Error(
-        "Modul tidak ditemukan atau Anda tidak memiliki akses. Coba muat ulang halaman atau login ulang.",
-      );
-    }
-    return row;
+    return row; // may be null when not found or blocked by RLS; UI handles it
   });
 
 export const getProfile = createServerFn({ method: "GET" })
