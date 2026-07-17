@@ -8,9 +8,46 @@ type Block =
 const OL_RE = /^\s*(\d+)[.)]\s+(.*)$/;
 const UL_RE = /^\s*[-*•·]\s+(.*)$/;
 
+// Inline patterns: catch enumerations that arrive on a single line, e.g.
+// "1. Foo 2. Bar 3. Baz" or "- Foo - Bar - Baz"
+const INLINE_OL_RE = /(?:^|\s)(\d+)[.)]\s+/g;
+const INLINE_UL_RE = /(?:^|\s)[-*•·]\s+/g;
+
+function splitInline(line: string): string[] | null {
+  // ordered: needs at least "1." and "2." present
+  const olMatches = [...line.matchAll(INLINE_OL_RE)];
+  if (olMatches.length >= 2) {
+    const parts: string[] = [];
+    for (let i = 0; i < olMatches.length; i++) {
+      const start = olMatches[i].index! + olMatches[i][0].length;
+      const end = i + 1 < olMatches.length ? olMatches[i + 1].index! : line.length;
+      parts.push(`${olMatches[i][1]}. ${line.slice(start, end).trim()}`);
+    }
+    return parts;
+  }
+  const ulMatches = [...line.matchAll(INLINE_UL_RE)];
+  if (ulMatches.length >= 2) {
+    const parts: string[] = [];
+    for (let i = 0; i < ulMatches.length; i++) {
+      const start = ulMatches[i].index! + ulMatches[i][0].length;
+      const end = i + 1 < ulMatches.length ? ulMatches[i + 1].index! : line.length;
+      parts.push(`- ${line.slice(start, end).trim()}`);
+    }
+    return parts;
+  }
+  return null;
+}
+
 export function parseRichText(input: string | undefined | null): Block[] {
   if (!input) return [];
-  const lines = String(input).replace(/\r\n/g, "\n").split("\n");
+  const rawLines = String(input).replace(/\r\n/g, "\n").split("\n");
+  // Expand inline enumerations into separate lines so they render as list items.
+  const lines: string[] = [];
+  for (const l of rawLines) {
+    const split = splitInline(l);
+    if (split) lines.push(...split);
+    else lines.push(l);
+  }
   const blocks: Block[] = [];
   let buf: string[] = [];
   const flushPara = () => {

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { FileText, Loader2 } from "lucide-react";
+import { FileText, Loader2, Eye, EyeOff } from "lucide-react";
 
 const search = z.object({ mode: z.enum(["signin", "signup"]).optional() });
 
@@ -25,6 +25,15 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const passwordRules = {
+    length: password.length >= 6,
+    upper: /[A-Z]/.test(password),
+    number: /[0-9]/.test(password),
+    symbol: /[^A-Za-z0-9]/.test(password),
+  };
+  const passwordValid = Object.values(passwordRules).every(Boolean);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -37,6 +46,11 @@ function AuthPage() {
     setLoading(true);
     try {
       if (isSignup) {
+        if (!passwordValid) {
+          toast.error("Kata sandi belum memenuhi syarat.");
+          setLoading(false);
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -92,9 +106,35 @@ function AuthPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="pw">Kata Sandi</Label>
-                <Input id="pw" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+                <div className="relative">
+                  <Input
+                    id="pw"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {isSignup && (
+                  <ul className="text-xs mt-2 space-y-0.5">
+                    <Rule ok={passwordRules.length}>Minimal 6 karakter</Rule>
+                    <Rule ok={passwordRules.upper}>Mengandung huruf kapital (A–Z)</Rule>
+                    <Rule ok={passwordRules.number}>Mengandung angka (0–9)</Rule>
+                    <Rule ok={passwordRules.symbol}>Mengandung karakter khusus (misal: ! @ # $)</Rule>
+                  </ul>
+                )}
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading || (isSignup && !passwordValid)}>
                 {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {isSignup ? "Daftar" : "Masuk"}
               </Button>
@@ -110,5 +150,13 @@ function AuthPage() {
         </Card>
       </main>
     </div>
+  );
+}
+
+function Rule({ ok, children }: { ok: boolean; children: React.ReactNode }) {
+  return (
+    <li className={ok ? "text-emerald-600" : "text-muted-foreground"}>
+      <span className="inline-block w-3">{ok ? "✓" : "•"}</span> {children}
+    </li>
   );
 }
