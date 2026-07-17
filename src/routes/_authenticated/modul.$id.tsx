@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Printer, Download, Loader2, AlertTriangle } from "lucide-react";
 import jsPDF from "jspdf";
+import { RichText, parseRichText } from "@/lib/rich-text";
+import { exportModulDocx } from "@/lib/docx-export";
 
 export const Route = createFileRoute("/_authenticated/modul/$id")({
   component: ModulPage,
@@ -68,12 +70,13 @@ function ModulPage() {
         <div className="flex gap-2">
           <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">Siap</Badge>
           <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1.5" />Cetak</Button>
+          <Button variant="outline" size="sm" onClick={() => exportModulDocx(hasil, form)}><Download className="h-4 w-4 mr-1.5" />Word (.docx)</Button>
           <Button size="sm" onClick={() => exportPDF(hasil, form)}><Download className="h-4 w-4 mr-1.5" />Unduh PDF</Button>
         </div>
       </div>
 
       <Card className="print-area shadow-lg">
-        <CardContent className="p-8 md:p-12 modul-content">
+        <CardContent className="p-8 md:p-12 modul-content" style={{ width: "210mm", maxWidth: "100%", minHeight: "297mm", margin: "0 auto", background: "white" }}>
           {/* Kop */}
           <div className="text-center border-b-4 border-double border-foreground pb-4 mb-6">
             <p className="text-xs">PEMERINTAH {form.provinsi.toUpperCase()}</p>
@@ -105,10 +108,10 @@ function ModulPage() {
           {hasil.pertemuanData.map((p) => (
             <div key={p.pertemuan} className="mb-4">
               <h3>Pertemuan {p.pertemuan} — {p.topik}</h3>
-              <p><strong>Tujuan:</strong> {p.tujuan}</p>
-              <p><strong>Kegiatan Pembuka:</strong> {p.pembuka}</p>
-              <p><strong>Kegiatan Inti:</strong> {p.inti}</p>
-              <p><strong>Kegiatan Penutup:</strong> {p.penutup}</p>
+              <p><strong>Tujuan:</strong></p><RichText text={p.tujuan} />
+              <p><strong>Kegiatan Pembuka:</strong></p><RichText text={p.pembuka} />
+              <p><strong>Kegiatan Inti:</strong></p><RichText text={p.inti} />
+              <p><strong>Kegiatan Penutup:</strong></p><RichText text={p.penutup} />
             </div>
           ))}
 
@@ -121,17 +124,17 @@ function ModulPage() {
           {hasil.lkpdData.map((l) => (
             <div key={l.pertemuan} className="mb-4">
               <h3>LKPD Pertemuan {l.pertemuan}: {l.judul}</h3>
-              <p><strong>Petunjuk:</strong> {l.petunjuk}</p>
-              <p><strong>Aktivitas:</strong> {l.aktivitas}</p>
+              <p><strong>Petunjuk:</strong></p><RichText text={l.petunjuk} />
+              <p><strong>Aktivitas:</strong></p><RichText text={l.aktivitas} />
             </div>
           ))}
 
           <h2 className="page-break">LAMPIRAN 2 — Kuis Sumatif</h2>
-          <ol>
+          <ol className="rich-list">
             {hasil.kuisData.map((k) => (
               <li key={k.nomor} className="mb-2">
-                <p><strong>{k.pertanyaan}</strong></p>
-                <p className="text-sm italic">Jawaban: {k.jawaban}</p>
+                <strong>{k.pertanyaan}</strong>
+                <div className="text-sm italic">Jawaban: {k.jawaban}</div>
               </li>
             ))}
           </ol>
@@ -175,25 +178,48 @@ function Row({ label, value }: { label: string; value: string }) {
   return <tr><td style={{ width: 220 }}><strong>{label}</strong></td><td>: {value}</td></tr>;
 }
 function Blok({ title, body }: { title: string; body: string }) {
-  return <><h2>{title}</h2><p style={{ whiteSpace: "pre-wrap" }}>{body}</p></>;
+  return <><h2>{title}</h2><RichText text={body} /></>;
 }
 
 function exportPDF(hasil: ModulHasil, form: ModulForm) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const margin = 18;
+  const margin = 15;
   const width = 210 - margin * 2;
+  const pageBottom = 297 - margin;
   let y = margin;
-  const line = (h = 6) => { y += h; if (y > 280) { doc.addPage(); y = margin; } };
+  const line = (h = 4) => { y += h; if (y > pageBottom) { doc.addPage(); y = margin; } };
   const text = (s: string, opts?: { bold?: boolean; size?: number; center?: boolean }) => {
     doc.setFont("helvetica", opts?.bold ? "bold" : "normal");
     doc.setFontSize(opts?.size ?? 11);
-    const lines = doc.splitTextToSize(s, width);
+    const lines = doc.splitTextToSize(s, width - (opts?.center ? 0 : 0));
     for (const l of lines) {
-      if (y > 280) { doc.addPage(); y = margin; }
+      if (y > pageBottom) { doc.addPage(); y = margin; }
       doc.text(l, opts?.center ? 105 : margin, y, opts?.center ? { align: "center" } : undefined);
       y += (opts?.size ?? 11) * 0.45;
     }
     y += 1;
+  };
+  const rich = (s: string) => {
+    const blocks = parseRichText(s);
+    if (!blocks.length) { text("-"); return; }
+    for (const b of blocks) {
+      if (b.kind === "p") { text(b.text); continue; }
+      const indent = 6;
+      b.items.forEach((it, i) => {
+        const marker = b.kind === "ol" ? `${i + 1}.` : "•";
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        const lines = doc.splitTextToSize(it, width - indent);
+        lines.forEach((l: string, idx: number) => {
+          if (y > pageBottom) { doc.addPage(); y = margin; }
+          if (idx === 0) doc.text(marker, margin, y);
+          doc.text(l, margin + indent, y);
+          y += 11 * 0.45;
+        });
+        y += 0.5;
+      });
+      y += 1;
+    }
   };
   text(`PEMERINTAH ${form.provinsi.toUpperCase()}`, { center: true, size: 10 });
   text(formatKopDinas(form.kabupaten), { center: true, bold: true, size: 11 });
@@ -217,14 +243,46 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
     ["C. Pemahaman Bermakna", hasil.pemahamanBermakna],
     ["D. Pertanyaan Pemantik", hasil.pertanyaanPemantik],
   ];
-  blocks.forEach(([t, b]) => { text(t, { bold: true, size: 12 }); text(b); });
+  blocks.forEach(([t, b]) => { text(t, { bold: true, size: 12 }); rich(b); });
   text("E. Kegiatan Pembelajaran", { bold: true, size: 12 });
   hasil.pertemuanData.forEach((p) => {
     text(`Pertemuan ${p.pertemuan} — ${p.topik}`, { bold: true });
-    text(`Tujuan: ${p.tujuan}`);
-    text(`Pembuka: ${p.pembuka}`);
-    text(`Inti: ${p.inti}`);
-    text(`Penutup: ${p.penutup}`); line(2);
+    text("Tujuan:", { bold: true }); rich(p.tujuan);
+    text("Kegiatan Pembuka:", { bold: true }); rich(p.pembuka);
+    text("Kegiatan Inti:", { bold: true }); rich(p.inti);
+    text("Kegiatan Penutup:", { bold: true }); rich(p.penutup);
+    line(2);
+  });
+  const blocks2: [string, string][] = [
+    ["F. Asesmen Formatif", hasil.asesmenFormatif],
+    ["G. Asesmen Sumatif", hasil.asesmenSumatif],
+    ["H. Refleksi Guru", hasil.refleksiGuru],
+    ["I. Refleksi Siswa", hasil.refleksiSiswa],
+  ];
+  blocks2.forEach(([t, b]) => { text(t, { bold: true, size: 12 }); rich(b); });
+  doc.addPage(); y = margin;
+  text("LAMPIRAN 1 — LKPD", { bold: true, size: 13 });
+  hasil.lkpdData.forEach((l) => {
+    text(`LKPD Pertemuan ${l.pertemuan}: ${l.judul}`, { bold: true });
+    text("Petunjuk:", { bold: true }); rich(l.petunjuk);
+    text("Aktivitas:", { bold: true }); rich(l.aktivitas);
+    line(2);
+  });
+  doc.addPage(); y = margin;
+  text("LAMPIRAN 2 — Kuis Sumatif", { bold: true, size: 13 });
+  hasil.kuisData.forEach((k, i) => {
+    text(`${i + 1}. ${k.pertanyaan}`, { bold: true });
+    text(`   Jawaban: ${k.jawaban}`);
+  });
+  doc.addPage(); y = margin;
+  text("LAMPIRAN 3 — Rubrik Penilaian", { bold: true, size: 13 });
+  hasil.rubrikData.forEach((r) => {
+    text(r.kriteria, { bold: true });
+    text(`Sangat Baik: ${r.sangatBaik}`);
+    text(`Baik: ${r.baik}`);
+    text(`Cukup: ${r.cukup}`);
+    text(`Perlu Bimbingan: ${r.perluBimbingan}`);
+    line(1);
   });
   doc.save(`${hasil.judulModul.replace(/[^\w\s-]/g, "").slice(0, 60)}.pdf`);
 }
