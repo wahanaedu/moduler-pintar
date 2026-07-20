@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { generateModul } from "@/lib/modul.functions";
+import { generateModul, getKelasLock, setKelasLock } from "@/lib/modul.functions";
 import { PILIHAN_MAPEL, PILIHAN_KELAS, PILIHAN_MODEL_PEMBELAJARAN, PILIHAN_PROFIL_LULUSAN, PROFIL_MATERI_DEFAULT } from "@/lib/modul-constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/generate")({
   component: GeneratePage,
@@ -32,6 +32,13 @@ function faseForKelas(kelas: string): string {
 function GeneratePage() {
   const navigate = useNavigate();
   const gen = useServerFn(generateModul);
+  const fetchKelas = useServerFn(getKelasLock);
+  const saveKelas = useServerFn(setKelasLock);
+  const qc = useQueryClient();
+  const { data: kelasLock } = useQuery({
+    queryKey: ["my-kelas-lock"],
+    queryFn: () => fetchKelas(),
+  });
 
   const [form, setForm] = useState({
     namaGuru: "",
@@ -54,6 +61,25 @@ function GeneratePage() {
     profilLulusan: ["Penalaran Kritis", "Kreativitas"] as string[],
   });
 
+  // Sinkronkan kelas dari kunci profil.
+  useEffect(() => {
+    if (kelasLock?.kelas && kelasLock.kelas !== form.kelas) {
+      setForm((f) => ({ ...f, kelas: kelasLock.kelas!, fase: faseForKelas(kelasLock.kelas!) }));
+    }
+  }, [kelasLock?.kelas]);
+
+  const [changeOpen, setChangeOpen] = useState(false);
+  const [newKelas, setNewKelas] = useState<string>("");
+  const changeMutation = useMutation({
+    mutationFn: async (v: string) => saveKelas({ data: { kelas: v } }),
+    onSuccess: (res) => {
+      toast.success(`Kelas diubah menjadi ${res.kelas}. Sisa perubahan: ${res.changesRemaining}.`);
+      qc.invalidateQueries({ queryKey: ["my-kelas-lock"] });
+      setChangeOpen(false);
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Gagal mengubah kelas"),
+  });
+
   function upd<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
@@ -72,7 +98,7 @@ function GeneratePage() {
     upd("mapel", v);
     if (def) {
       upd("materi", def.materi);
-      upd("fase", def.fase);
+      if (!kelasLock?.kelas) upd("fase", def.fase);
     }
   }
 
@@ -140,10 +166,41 @@ function GeneratePage() {
               </Select>
             </Field>
             <Field label="Kelas" required>
-              <Select value={form.kelas} onValueChange={(v) => { upd("kelas", v); upd("fase", faseForKelas(v)); }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PILIHAN_KELAS.map((k) => <SelectItem key={k} value={k}>{k}</SelectItem>)}</SelectContent>
-              </Select>
+              {kelasLock?.kelas ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 h-10 px-3 rounded-md border bg-muted/50 text-sm">
+                    <Lock className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{kelasLock.kelas}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {kelasLock.changesRemaining > 0
+                        ? `Sisa perubahan: ${kelasLock.changesRemaining}`
+                        : "Terkunci permanen"}
+                    </span>
+                  </div>
+                  {kelasLock.changesRemaining > 0 && !changeOpen && (
+                    <Button type="button" variant="outline" size="sm" onClick={() => setChangeOpen(true)}>
+                      Ubah kelas (sekali saja)
+                    </Button>
+                  )}
+                  {changeOpen && (
+                    <div className="flex gap-2 items-center">
+                      <Select value={newKelas} onValueChange={setNewKelas}>
+                        <SelectTrigger><SelectValue placeholder="Pilih kelas baru…" /></SelectTrigger>
+                        <SelectContent>{PILIHAN_KELAS.filter((k) => k !== kelasLock.kelas).map((k) => <SelectItem key={k} value={k}>{k}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Button type="button" size="sm" disabled={!newKelas || changeMutation.isPending} onClick={() => changeMutation.mutate(newKelas)}>
+                        Simpan
+                      </Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => setChangeOpen(false)}>Batal</Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Select value={form.kelas} onValueChange={(v) => { upd("kelas", v); upd("fase", faseForKelas(v)); }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{PILIHAN_KELAS.map((k) => <SelectItem key={k} value={k}>{k}</SelectItem>)}</SelectContent>
+                </Select>
+              )}
             </Field>
             <Field label="Materi Pokok" required className="md:col-span-2">
               <Textarea rows={2} value={form.materi} onChange={(e) => upd("materi", e.target.value)} placeholder="Contoh: Menggunakan kata sifat dalam karangan deskripsi" required />
