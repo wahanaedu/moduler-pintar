@@ -8,7 +8,15 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 type ModulFormInput = z.infer<typeof ModulFormSchema>;
 
 function buildPrompt(form: ModulFormInput) {
-  return `Anda adalah ahli kurikulum Merdeka Belajar (Deep Learning) untuk sekolah ${form.tingkatSekolah} di Indonesia. Susun MODUL AJAR yang LENGKAP, KONTEKSTUAL, dan SIAP PAKAI dalam Bahasa Indonesia formal. Semua isi HARUS relevan dan konsisten dengan Materi Pokok dan Tujuan Pembelajaran; bukan sekadar template kosong.
+  return `Anda adalah ahli kurikulum Merdeka Belajar yang menerapkan PENDEKATAN PEMBELAJARAN MENDALAM (Deep Learning) untuk sekolah ${form.tingkatSekolah} di Indonesia. Susun MODUL AJAR yang LENGKAP, KONTEKSTUAL, dan SIAP PAKAI dalam Bahasa Indonesia formal. Semua isi HARUS relevan dan konsisten dengan Materi Pokok dan Tujuan Pembelajaran; bukan sekadar template kosong.
+
+PENDEKATAN PEMBELAJARAN MENDALAM (WAJIB dijadikan ruh seluruh modul):
+- 3 PRINSIP: (a) BERKESADARAN — siswa sadar tujuan, proses, dan makna belajar (metakognisi); (b) BERMAKNA — belajar terhubung dengan kehidupan nyata, pengalaman, dan nilai siswa; (c) MENGGEMBIRAKAN — suasana aman, kolaboratif, dan memicu rasa ingin tahu. Sisipkan indikator ketiga prinsip ini pada asesmen awal, dimensi profil lulusan, kegiatan inti tiap pertemuan, refleksi guru, dan refleksi siswa.
+- 3 PENGALAMAN BELAJAR yang harus MUNCUL BERURUTAN di dalam kegiatan inti setiap pertemuan dan dinyatakan EKSPLISIT sebagai penanda tahap:
+  1) MEMAHAMI — mengeksplorasi konsep, membangun pengertian, mengaitkan pengetahuan awal dengan informasi baru tentang "${form.materi}".
+  2) MENGAPLIKASI — menggunakan konsep untuk memecahkan masalah / mengerjakan tugas / menghasilkan produk kontekstual.
+  3) MEREFLEKSI — menilai kembali proses & hasil belajar, menyadari kekuatan/kelemahan, merencanakan perbaikan.
+  Padukan ketiga pengalaman ini dengan SINTAKS "${form.modelPembelajaran}" (jangan hilangkan sintaks model; sebutkan bahwa tahap X model = pengalaman MEMAHAMI/MENGAPLIKASI/MEREFLEKSI).
 
 DATA MODUL:
 - Mata Pelajaran: ${form.mapel}
@@ -23,26 +31,26 @@ INSTRUKSI ISI TIAP FIELD (semua wajib terisi konten nyata, minimal 2–4 kalimat
 
 1. judulModul: judul menarik yang menyebut materi "${form.materi}" secara eksplisit.
 2. asesmenAwal: uraikan teknik diagnostik konkret (contoh pertanyaan lisan / kuis pemetaan / observasi) beserta 3–5 CONTOH PERTANYAAN diagnostik spesifik tentang "${form.materi}" untuk memetakan pengetahuan awal peserta didik.
-3. dimensiProfilLulusan: jabarkan tiap dimensi yang dipilih (${form.profilLulusan.join(", ")}) dan JELASKAN indikator perilaku siswa yang akan diamati dalam pembelajaran "${form.materi}".
+3. dimensiProfilLulusan: jabarkan tiap dimensi yang dipilih (${form.profilLulusan.join(", ")}) dan JELASKAN indikator perilaku siswa yang akan diamati dalam pembelajaran "${form.materi}". Kaitkan tiap dimensi dengan prinsip pembelajaran mendalam (berkesadaran / bermakna / menggembirakan).
 4. tujuanPembelajaran: 3–5 tujuan operasional (audience-behavior-condition-degree), pakai KKO Bloom yang bervariasi (C2–C5), semuanya membahas "${form.materi}". Nomori 1) 2) 3).
-5. pemahamanBermakna: 2–3 kalimat berisi big idea/konsep esensial dari "${form.materi}" yang relevan dengan kehidupan siswa.
+5. pemahamanBermakna: 2–3 kalimat berisi big idea/konsep esensial dari "${form.materi}" yang relevan dengan kehidupan siswa (prinsip BERMAKNA).
 6. pertanyaanPemantik: 3 pertanyaan pemantik terbuka yang provokatif dan spesifik terhadap "${form.materi}". Nomori 1) 2) 3).
 7. pertemuanData: TEPAT ${form.jumlahPertemuan} objek berurutan 1..${form.jumlahPertemuan}. Setiap objek WAJIB punya field pertemuan berupa angka (1, 2, 3, dst.). Setiap pertemuan HARUS berbeda topik/sub-materi dan bertahap (scaffolded) menuju penguasaan "${form.materi}".
    - pertemuan: angka urut pertemuan, bukan teks.
    - topik: sub-materi konkret pada pertemuan itu.
    - tujuan: 1–2 tujuan khusus pertemuan itu, KKO operasional, TURUNAN dari tujuanPembelajaran.
-   - pembuka (5–10 menit): salam, doa, apersepsi terkait sub-materi, penyampaian tujuan, pemantik singkat. Tulis sebagai langkah bernomor 1) 2) 3).
-   - inti (45–60 menit): TULIS SINTAKS "${form.modelPembelajaran}" secara eksplisit sebagai tahap bernomor (contoh untuk PBL: 1) Orientasi masalah, 2) Mengorganisasi belajar, dst.). Untuk tiap tahap sebutkan aktivitas guru & siswa yang spesifik dengan sub-materi pertemuan itu.
-   - penutup (5–10 menit): refleksi, kesimpulan bersama, penugasan / info pertemuan berikutnya. Langkah bernomor.
+   - pembuka (5–10 menit): salam, doa, apersepsi terkait sub-materi, penyampaian tujuan, pemantik singkat, serta membangun suasana MENGGEMBIRAKAN dan BERKESADARAN (siswa menyadari apa & mengapa belajar). Tulis sebagai langkah bernomor 1) 2) 3).
+   - inti (45–60 menit): TULIS SINTAKS "${form.modelPembelajaran}" secara eksplisit sebagai tahap bernomor, dan pada setiap tahap TANDAI pengalaman belajar mendalam yang dominan: [MEMAHAMI], [MENGAPLIKASI], atau [MEREFLEKSI]. Contoh format: "1) Orientasi masalah [MEMAHAMI] — ...". Sebutkan aktivitas guru & siswa yang spesifik dengan sub-materi pertemuan itu, dan bagaimana prinsip bermakna/menggembirakan diwujudkan.
+   - penutup (5–10 menit): siswa MEREFLEKSI proses & hasil belajar (metakognisi), kesimpulan bersama, penugasan / info pertemuan berikutnya. Langkah bernomor.
 8. asesmenFormatif: teknik + instrumen (mis. observasi diskusi, exit ticket, presentasi LKPD) beserta contoh indikator penilaian selama proses pembelajaran "${form.materi}".
 9. asesmenSumatif: bentuk asesmen akhir (tes tulis / proyek / produk), cakupan indikator, dan cara penskoran ringkas.
-10. refleksiGuru: 4–5 pertanyaan refleksi untuk guru sesudah mengajar "${form.materi}" (efektivitas strategi, kendala, tindak lanjut). Nomori.
-11. refleksiSiswa: 4–5 pertanyaan refleksi bahasa siswa tentang pengalaman belajar "${form.materi}". Nomori.
+10. refleksiGuru: 4–5 pertanyaan refleksi untuk guru sesudah mengajar "${form.materi}" (efektivitas strategi, kendala, tindak lanjut), termasuk sejauh mana pembelajaran mendalam terwujud (berkesadaran/bermakna/menggembirakan). Nomori.
+11. refleksiSiswa: 4–5 pertanyaan refleksi bahasa siswa tentang pengalaman belajar "${form.materi}", meliputi kesadaran belajar (apa yang saya pahami), makna (mengapa penting bagi saya), dan perasaan (bagaimana suasana belajar). Nomori.
 12. lkpdData: TEPAT ${form.jumlahPertemuan} LKPD (1 per pertemuan, sesuai sub-materi pertemuan itu). Setiap objek WAJIB punya field pertemuan berupa angka.
     - pertemuan: angka urut pertemuan, bukan teks.
     - judul: menyebut sub-materi pertemuan.
-    - petunjuk: langkah bernomor yang jelas untuk siswa.
-    - aktivitas: soal / tugas / instruksi kerja spesifik (bukan "kerjakan soal berikut"). Sertakan minimal 3 butir aktivitas/pertanyaan konkret terkait sub-materi.
+    - petunjuk: langkah bernomor yang jelas untuk siswa, memuat isyarat MEMAHAMI → MENGAPLIKASI → MEREFLEKSI.
+    - aktivitas: soal / tugas / instruksi kerja spesifik (bukan "kerjakan soal berikut"). Sertakan minimal 3 butir aktivitas/pertanyaan konkret terkait sub-materi, dan pastikan salah satu butir mengajak siswa merefleksi apa yang dipelajari.
 13. kuisData: MINIMAL 5 pertanyaan sumatif konkret tentang "${form.materi}" (variasi tingkat kognitif C2–C5), tiap item WAJIB punya field nomor berupa angka dan kunci JAWABAN LENGKAP (bukan hanya A/B/C), bernomor mulai 1.
 14. rubrikData: MINIMAL 4 kriteria penilaian yang RELEVAN dengan tujuan pembelajaran "${form.materi}" (mis. Ketepatan Konsep, Kolaborasi, Komunikasi, Produk). Tiap kriteria WAJIB memiliki 4 deskriptor tingkat yang berbeda dan spesifik: sangatBaik, baik, cukup, perluBimbingan (masing-masing 1–2 kalimat deskriptif, bukan "sangat baik" saja).
 
@@ -432,4 +440,50 @@ export const updateProfile = createServerFn({ method: "POST" })
       .eq("id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+export const getKelasLock = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("profiles")
+      .select("kelas_terkunci, kelas_changes_remaining")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return {
+      kelas: (data?.kelas_terkunci as string | null) ?? null,
+      changesRemaining: (data?.kelas_changes_remaining as number | null) ?? 1,
+    };
+  });
+
+export const setKelasLock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ kelas: z.string().trim().min(1) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: current, error: readErr } = await context.supabase
+      .from("profiles")
+      .select("kelas_terkunci, kelas_changes_remaining")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+
+    const currentKelas = (current?.kelas_terkunci as string | null) ?? null;
+    const remaining = (current?.kelas_changes_remaining as number | null) ?? 1;
+
+    if (currentKelas === data.kelas) return { ok: true, kelas: data.kelas, changesRemaining: remaining };
+
+    // First selection (no decrement) vs a real change (decrement).
+    let nextRemaining = remaining;
+    if (currentKelas !== null) {
+      if (remaining <= 0) throw new Error("Kelas terkunci sudah diubah sebelumnya dan tidak dapat diubah lagi.");
+      nextRemaining = remaining - 1;
+    }
+
+    const { error: updErr } = await context.supabase
+      .from("profiles")
+      .update({ kelas_terkunci: data.kelas, kelas_changes_remaining: nextRemaining })
+      .eq("id", context.userId);
+    if (updErr) throw new Error(updErr.message);
+    return { ok: true, kelas: data.kelas, changesRemaining: nextRemaining };
   });
