@@ -433,3 +433,49 @@ export const updateProfile = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const getKelasLock = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("profiles")
+      .select("kelas_terkunci, kelas_changes_remaining")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return {
+      kelas: (data?.kelas_terkunci as string | null) ?? null,
+      changesRemaining: (data?.kelas_changes_remaining as number | null) ?? 1,
+    };
+  });
+
+export const setKelasLock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ kelas: z.string().trim().min(1) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: current, error: readErr } = await context.supabase
+      .from("profiles")
+      .select("kelas_terkunci, kelas_changes_remaining")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+
+    const currentKelas = (current?.kelas_terkunci as string | null) ?? null;
+    const remaining = (current?.kelas_changes_remaining as number | null) ?? 1;
+
+    if (currentKelas === data.kelas) return { ok: true, kelas: data.kelas, changesRemaining: remaining };
+
+    // First selection (no decrement) vs a real change (decrement).
+    let nextRemaining = remaining;
+    if (currentKelas !== null) {
+      if (remaining <= 0) throw new Error("Kelas terkunci sudah diubah sebelumnya dan tidak dapat diubah lagi.");
+      nextRemaining = remaining - 1;
+    }
+
+    const { error: updErr } = await context.supabase
+      .from("profiles")
+      .update({ kelas_terkunci: data.kelas, kelas_changes_remaining: nextRemaining })
+      .eq("id", context.userId);
+    if (updErr) throw new Error(updErr.message);
+    return { ok: true, kelas: data.kelas, changesRemaining: nextRemaining };
+  });
