@@ -77,6 +77,8 @@ export type Database = {
           id: string
           jabatan: Database["public"]["Enums"]["jabatan_type"] | null
           kabupaten: string | null
+          kelas_changes_remaining: number
+          kelas_terkunci: string | null
           kepala_sekolah: string | null
           nip: string | null
           nip_kepala_sekolah: string | null
@@ -93,6 +95,8 @@ export type Database = {
           id: string
           jabatan?: Database["public"]["Enums"]["jabatan_type"] | null
           kabupaten?: string | null
+          kelas_changes_remaining?: number
+          kelas_terkunci?: string | null
           kepala_sekolah?: string | null
           nip?: string | null
           nip_kepala_sekolah?: string | null
@@ -109,6 +113,8 @@ export type Database = {
           id?: string
           jabatan?: Database["public"]["Enums"]["jabatan_type"] | null
           kabupaten?: string | null
+          kelas_changes_remaining?: number
+          kelas_terkunci?: string | null
           kepala_sekolah?: string | null
           nip?: string | null
           nip_kepala_sekolah?: string | null
