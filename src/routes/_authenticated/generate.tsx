@@ -43,6 +43,7 @@ function GeneratePage() {
     namaGuru: "",
     nip: "",
     sekolah: "",
+    alamatSekolah: "",
     kabupaten: "",
     jabatan: "guru_kelas" as "guru_kelas" | "guru_mapel",
     kepalaSekolah: "",
@@ -136,6 +137,9 @@ function GeneratePage() {
             </Field>
             <Field label="Nama Sekolah" required>
               <Input value={form.sekolah} onChange={(e) => upd("sekolah", e.target.value)} placeholder="Cth. SD Negeri 1 Merdeka" required />
+            </Field>
+            <Field label="Alamat Sekolah" required>
+              <Input value={form.alamatSekolah} onChange={(e) => upd("alamatSekolah", e.target.value)} placeholder="Cth. Jl. Melati No. 12, Kec. Depok, Sleman" required />
             </Field>
             <Field label="Kabupaten/Kota" required>
               <Input value={form.kabupaten} onChange={(e) => upd("kabupaten", e.target.value)} placeholder="Cth. Kabupaten Sleman" required />
@@ -258,7 +262,7 @@ function GeneratePage() {
 
         <div className="sticky bottom-4 flex justify-end">
           <Button type="submit" size="lg" disabled={mutation.isPending} className="shadow-lg">
-            {mutation.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Membuat modul…</> : <><Sparkles className="h-4 w-4 mr-2" />Generate Modul dengan AI</>}
+            {mutation.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Membuat modul…</> : <><Sparkles className="h-4 w-4 mr-2" />Generate Modul Ajar Wahana Edukasi</>}
           </Button>
         </div>
       </form>
