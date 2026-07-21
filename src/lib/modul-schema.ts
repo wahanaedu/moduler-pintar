@@ -6,8 +6,8 @@ export const ModulFormSchema = z.object({
   nip: z.string().trim().optional().default(""),
   sekolah: z.string().trim().min(1, "Nama sekolah wajib diisi"),
   kabupaten: z.string().trim().min(1, "Kabupaten/Kota wajib diisi"),
-  provinsi: z.string().trim().min(1, "Provinsi wajib diisi"),
-  tingkatSekolah: z.enum(["SD", "SMP"]),
+  provinsi: z.string().trim().optional().default(""),
+  tingkatSekolah: z.enum(["SD", "SMP"]).optional().default("SD"),
   jabatan: z.enum(["guru_kelas", "guru_mapel"]),
   kepalaSekolah: z.string().trim().optional().default(""),
   nipKepalaSekolah: z.string().trim().optional().default(""),
@@ -21,6 +21,10 @@ export const ModulFormSchema = z.object({
   alokasiWaktu: z.string().trim().default("2 x 35 menit"),
   modelPembelajaran: z.string().trim().min(1),
   profilLulusan: z.array(z.string()).min(1, "Pilih minimal 1 dimensi profil lulusan"),
+  // Opsi tambahan konten
+  tambahGambar: z.boolean().optional().default(false),
+  tambahLK: z.boolean().optional().default(true),
+  tambahTabel: z.boolean().optional().default(false),
 });
 
 export type ModulForm = z.infer<typeof ModulFormSchema>;
@@ -67,6 +71,7 @@ export const ModulHasilSchema = z.object({
   kemitraanPembelajaran: z.string().optional().default(""),
   pemanfaatanDigital: z.string().optional().default(""),
   pertanyaanPemantik: z.string(),
+  saranMedia: z.string().optional().default(""),
   pertemuanData: z.array(PertemuanSchema),
   asesmenFormatif: z.string(),
   asesmenSumatif: z.string(),

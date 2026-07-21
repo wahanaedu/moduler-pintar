@@ -79,7 +79,7 @@ function ModulPage() {
         <CardContent className="p-8 md:p-12 modul-content" style={{ width: "210mm", maxWidth: "100%", minHeight: "297mm", margin: "0 auto", background: "white" }}>
           {/* Kop */}
           <div className="text-center border-b-4 border-double border-foreground pb-4 mb-6">
-            <p className="text-xs">PEMERINTAH {form.provinsi.toUpperCase()}</p>
+            <p className="text-xs">PEMERINTAH {(form.provinsi || "REPUBLIK INDONESIA").toUpperCase()}</p>
             <p className="text-sm font-bold">{formatKopDinas(form.kabupaten)}</p>
             <p className="text-lg font-bold font-serif">{form.sekolah.toUpperCase()}</p>
           </div>
@@ -247,7 +247,7 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
     }
     return counter;
   };
-  text(`PEMERINTAH ${form.provinsi.toUpperCase()}`, { center: true, size: 10 });
+  text(`PEMERINTAH ${(form.provinsi || "REPUBLIK INDONESIA").toUpperCase()}`, { center: true, size: 10 });
   text(formatKopDinas(form.kabupaten), { center: true, bold: true, size: 11 });
   text(form.sekolah.toUpperCase(), { center: true, bold: true, size: 13 });
   doc.setLineWidth(0.6); doc.line(margin, y, 210 - margin, y); line(2);

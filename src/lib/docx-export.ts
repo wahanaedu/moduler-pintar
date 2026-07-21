@@ -104,7 +104,7 @@ function rubrikTable(rubrik: ModulHasil["rubrikData"]): Table {
 export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
   const children: (Paragraph | Table)[] = [];
 
-  children.push(centered(`PEMERINTAH ${form.provinsi.toUpperCase()}`, false, 20));
+  children.push(centered(`PEMERINTAH ${(form.provinsi || "REPUBLIK INDONESIA").toUpperCase()}`, false, 20));
   children.push(centered(formatKopDinas(form.kabupaten), true, 22));
   children.push(centered(form.sekolah.toUpperCase(), true, 26));
   children.push(new Paragraph({ children: [new TextRun("")], border: { bottom: { style: BorderStyle.DOUBLE, size: 8, color: "000000", space: 4 } } }));
