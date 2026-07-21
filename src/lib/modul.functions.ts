@@ -10,7 +10,7 @@ type ModulFormInput = z.infer<typeof ModulFormSchema>;
 function buildPrompt(form: ModulFormInput) {
   const jenjang = form.tingkatSekolah || (parseInt(form.kelas.replace(/\D/g, ""), 10) <= 6 ? "SD" : "SMP");
   const opsiTambahan = [
-    form.tambahGambar ? "TAMBAHAN GAMBAR/MEDIA: Isi field saranMedia dengan daftar bernomor saran gambar/foto/ilustrasi/video/audio yang cocok untuk tiap pertemuan beserta deskripsi singkat dan alasan pemakaiannya. Selain itu, pada setiap kegiatan inti, sebutkan media visual/audio yang digunakan." : "TANPA GAMBAR/MEDIA: kosongkan field saranMedia (\"\").",
+    form.tambahGambar ? `TAMBAHAN GAMBAR/MEDIA: Isi field saranMedia dengan DAFTAR BERNOMOR 1) 2) 3) … saran gambar/foto/ilustrasi/video/audio konkret untuk TIAP pertemuan (minimal ${form.jumlahPertemuan} butir). Tiap butir WAJIB memuat: (a) jenis media (foto/ilustrasi/video/audio/diagram), (b) DESKRIPSI VISUAL yang detail sehingga guru bisa mencarinya di internet atau menggambarnya (subjek, latar, warna dominan, sudut pandang), (c) kata kunci pencarian (misal "kata kunci: ..."), dan (d) alasan pemakaiannya untuk memperkuat pemahaman "${form.materi}". Selain itu, pada setiap kegiatan inti sebutkan media visual/audio yang digunakan.` : "TANPA GAMBAR/MEDIA: kosongkan field saranMedia (\"\").",
     form.tambahLK ? "SERTAKAN LKPD lengkap pada lkpdData sesuai jumlah pertemuan." : "TANPA LKPD: kembalikan lkpdData sebagai array kosong []. Jangan menulis LKPD sama sekali.",
     form.tambahTabel ? "SERTAKAN TABEL yang diperlukan (mis. tabel diferensiasi/kelompok, tabel rincian aktivitas, tabel skoring) di dalam field yang relevan (asesmenFormatif / asesmenSumatif / rubrikData / pertemuan inti) menggunakan format tabel pipa Markdown, contoh:\n| Kolom 1 | Kolom 2 |\n| --- | --- |\n| isi | isi |" : "Tanpa tabel tambahan di luar rubrikData; cukup gunakan paragraf & daftar bernomor.",
   ].join("\n- ");
@@ -43,6 +43,7 @@ INSTRUKSI ISI TIAP FIELD (semua wajib terisi konten nyata, minimal 2–4 kalimat
 3. dimensiProfilLulusan: jabarkan tiap dimensi yang dipilih (${form.profilLulusan.join(", ")}) dan JELASKAN indikator perilaku siswa yang akan diamati dalam pembelajaran "${form.materi}". Kaitkan tiap dimensi dengan prinsip pembelajaran mendalam (berkesadaran / bermakna / menggembirakan).
 4. tujuanPembelajaran: 3–5 tujuan operasional (audience-behavior-condition-degree), pakai KKO Bloom yang bervariasi (C2–C5), semuanya membahas "${form.materi}". Nomori 1) 2) 3).
 5. praktikPedagogis: jelaskan MODEL PEMBELAJARAN "${form.modelPembelajaran}" yang dipakai beserta TAHAPAN/SINTAKS singkatnya (nomori 1) 2) 3) …). Ringkas namun konkret (3–6 kalimat).
+   Format WAJIB: kalimat pertama menyebut nama model ("Model pembelajaran yang digunakan adalah ${form.modelPembelajaran}."), lalu baris berikutnya berupa DAFTAR BERNOMOR 1) 2) 3) … untuk tahapan/sintaks model tersebut, masing-masing dijelaskan singkat 1–2 kalimat kontekstual dengan materi "${form.materi}".
 6. lingkunganPembelajaran: ringkas suasana & pengaturan lingkungan belajar yang dipakai — di dalam kelas (tata ruang, kelompok, sumber belajar) MAUPUN di luar kelas (halaman, perpustakaan, lingkungan sekitar) bila relevan dengan "${form.materi}". 2–4 kalimat.
 7. kemitraanPembelajaran: sebutkan mitra pembelajaran yang mendukung (mis. orang tua/wali, komite, guru sejawat, narasumber, komunitas). Sifatnya OPSIONAL — jika tidak diperlukan tulis "Tidak ada mitra khusus untuk pembelajaran ini." 1–3 kalimat.
 8. pemanfaatanDigital: jelaskan penggunaan alat digital dalam pembelajaran "${form.materi}" — mis. papan interaktif digital, laptop, proyektor, video, audio, aplikasi/perangkat lunak — dan bagaimana alat itu dipakai. 2–4 kalimat.
@@ -61,7 +62,7 @@ INSTRUKSI ISI TIAP FIELD (semua wajib terisi konten nyata, minimal 2–4 kalimat
     - pertemuan: angka urut pertemuan, bukan teks.
     - judul: menyebut sub-materi pertemuan.
     - petunjuk: langkah bernomor yang jelas untuk siswa, memuat isyarat MEMAHAMI → MENGAPLIKASI → MEREFLEKSI.
-    - aktivitas: soal / tugas / instruksi kerja spesifik (bukan "kerjakan soal berikut"). Sertakan minimal 3 butir aktivitas/pertanyaan konkret terkait sub-materi, dan pastikan salah satu butir mengajak siswa merefleksi apa yang dipelajari.
+    - aktivitas: LKPD SIAP PAKAI berupa lembar kerja yang bisa langsung diisi siswa. WAJIB berisi MINIMAL 4 butir soal/tugas bernomor 1) 2) 3) 4). Setiap butir HARUS menyertakan RUANG JAWABAN kosong yang siap diisi dengan menulis "Jawaban: ____________________________________________" (garis bawah panjang) tepat setelah pertanyaan, atau tabel isian dengan sel-sel kosong bila cocok. Butir konkret dan spesifik terkait sub-materi (bukan "kerjakan soal berikut"), variatif (isian singkat, uraian, mencocokkan/tabel, refleksi), dan salah satunya mengajak siswa MEREFLEKSI apa yang dipelajari.
 16. kuisData: MINIMAL 5 pertanyaan sumatif konkret tentang "${form.materi}" (variasi tingkat kognitif C2–C5), tiap item WAJIB punya field nomor berupa angka dan kunci JAWABAN LENGKAP (bukan hanya A/B/C), bernomor mulai 1.
 17. rubrikData: MINIMAL 4 kriteria penilaian yang RELEVAN dengan tujuan pembelajaran "${form.materi}" (mis. Ketepatan Konsep, Kolaborasi, Komunikasi, Produk). Tiap kriteria WAJIB memiliki 4 deskriptor tingkat yang berbeda dan spesifik: sangatBaik, baik, cukup, perluBimbingan (masing-masing 1–2 kalimat deskriptif, bukan "sangat baik" saja).
 
@@ -131,8 +132,8 @@ function createFallbackHasil(form: ModulFormInput): ModulHasil {
   const lkpdData = pertemuanData.map((p) => ({
     pertemuan: p.pertemuan,
     judul: `LKPD ${p.topik}`,
-    petunjuk: `1) Bacalah instruksi dengan teliti. 2) Diskusikan contoh ${form.materi} bersama kelompok. 3) Tuliskan jawaban lengkap dan alasanmu.`,
-    aktivitas: `1) Amati contoh/kasus tentang ${form.materi}. 2) Identifikasi informasi penting dan konsep yang digunakan. 3) Selesaikan tugas latihan, lalu jelaskan langkah atau alasan jawabanmu.`,
+    petunjuk: `1) Tulis identitasmu pada kolom yang tersedia. 2) Bacalah setiap perintah dengan teliti. 3) Kerjakan tugas sesuai urutan. 4) Tuliskan jawaban pada garis/ruang kosong yang disediakan. 5) Diskusikan bagian yang sulit dengan teman kelompokmu.`,
+    aktivitas: `1) Jelaskan dengan bahasamu sendiri apa yang kamu pahami tentang ${form.materi}.\nJawaban: ____________________________________________\n\n2) Berikan 2 contoh penerapan ${form.materi} yang kamu temui dalam kehidupan sehari-hari.\nJawaban: ____________________________________________\n\n3) Selesaikan latihan berikut berdasarkan konsep ${form.materi}, tuliskan langkahnya secara runtut.\nJawaban: ____________________________________________\n\n4) Refleksi: hal baru apa yang kamu pelajari hari ini dan bagian mana yang masih ingin kamu tanyakan?\nJawaban: ____________________________________________`,
   }));
 
   return {

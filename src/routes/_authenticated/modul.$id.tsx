@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getModul } from "@/lib/modul.functions";
 import type { ModulHasil, ModulForm } from "@/lib/modul-schema";
-import { formatKopDinas } from "@/lib/modul-constants";
+import { formatKopDinas, formatPemerintahHeader } from "@/lib/modul-constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -79,9 +79,12 @@ function ModulPage() {
         <CardContent className="p-8 md:p-12 modul-content" style={{ width: "210mm", maxWidth: "100%", minHeight: "297mm", margin: "0 auto", background: "white" }}>
           {/* Kop */}
           <div className="text-center border-b-4 border-double border-foreground pb-4 mb-6">
-            <p className="text-xs">PEMERINTAH {(form.provinsi || "REPUBLIK INDONESIA").toUpperCase()}</p>
+            <p className="text-xs font-semibold">{formatPemerintahHeader(form.kabupaten)}</p>
             <p className="text-sm font-bold">{formatKopDinas(form.kabupaten)}</p>
             <p className="text-lg font-bold font-serif">{form.sekolah.toUpperCase()}</p>
+            {form.alamatSekolah ? (
+              <p className="text-xs italic">Alamat: {form.alamatSekolah}</p>
+            ) : null}
           </div>
 
           <h1 className="text-center font-serif text-2xl font-bold mb-1">MODUL AJAR / RENCANA PEMBELAJARAN</h1>
@@ -160,8 +163,20 @@ function ModulPage() {
           {hasil.lkpdData.map((l) => (
             <div key={l.pertemuan} className="mb-4">
               <h3>LKPD Pertemuan {l.pertemuan}: {l.judul}</h3>
+              <p className="text-xs font-semibold mt-2">Identitas Peserta Didik:</p>
+              <table className="lkpd-identitas">
+                <tbody>
+                  <tr><td className="lkpd-label">Nama</td><td>&nbsp;</td><td className="lkpd-label">Kelas</td><td>&nbsp;</td></tr>
+                  <tr><td className="lkpd-label">No. Absen</td><td>&nbsp;</td><td className="lkpd-label">Tanggal</td><td>&nbsp;</td></tr>
+                  <tr><td className="lkpd-label">Kelompok</td><td colSpan={3}>&nbsp;</td></tr>
+                </tbody>
+              </table>
               <p><strong>Petunjuk:</strong></p><RichText text={l.petunjuk} />
-              <p><strong>Aktivitas:</strong></p><RichText text={l.aktivitas} />
+              <p><strong>Aktivitas / Soal:</strong></p><RichText text={l.aktivitas} />
+              <p className="mt-3"><strong>Lembar Jawaban Tambahan:</strong></p>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="lkpd-fill-line" />
+              ))}
             </div>
           ))}
 
@@ -247,9 +262,10 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
     }
     return counter;
   };
-  text(`PEMERINTAH ${(form.provinsi || "REPUBLIK INDONESIA").toUpperCase()}`, { center: true, size: 10 });
+  text(formatPemerintahHeader(form.kabupaten), { center: true, bold: true, size: 10 });
   text(formatKopDinas(form.kabupaten), { center: true, bold: true, size: 11 });
   text(form.sekolah.toUpperCase(), { center: true, bold: true, size: 13 });
+  if (form.alamatSekolah) text(`Alamat: ${form.alamatSekolah}`, { center: true, size: 9 });
   doc.setLineWidth(0.6); doc.line(margin, y, 210 - margin, y); line(2);
   text("MODUL AJAR / RENCANA PEMBELAJARAN", { center: true, bold: true, size: 14 });
   text(hasil.judulModul, { center: true, bold: true, size: 12 });
@@ -316,8 +332,14 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
   text("LAMPIRAN 1 — LKPD", { bold: true, size: 13 });
   hasil.lkpdData.forEach((l) => {
     text(`LKPD Pertemuan ${l.pertemuan}: ${l.judul}`, { bold: true });
+    text("Identitas Peserta Didik:", { bold: true, size: 10 });
+    text("Nama       : ______________________________     Kelas    : ______________", { size: 10 });
+    text("No. Absen  : ______________________________     Tanggal  : ______________", { size: 10 });
+    text("Kelompok   : ______________________________________________________________", { size: 10 });
     text("Petunjuk:", { bold: true }); rich(l.petunjuk);
-    text("Aktivitas:", { bold: true }); rich(l.aktivitas);
+    text("Aktivitas / Soal:", { bold: true }); rich(l.aktivitas);
+    text("Lembar Jawaban Tambahan:", { bold: true, size: 10 });
+    for (let i = 0; i < 5; i++) text("__________________________________________________________________", { size: 10 });
     line(2);
   });
   doc.addPage(); y = margin;
