@@ -132,8 +132,8 @@ function createFallbackHasil(form: ModulFormInput): ModulHasil {
   const lkpdData = pertemuanData.map((p) => ({
     pertemuan: p.pertemuan,
     judul: `LKPD ${p.topik}`,
-    petunjuk: `1) Bacalah instruksi dengan teliti. 2) Diskusikan contoh ${form.materi} bersama kelompok. 3) Tuliskan jawaban lengkap dan alasanmu.`,
-    aktivitas: `1) Amati contoh/kasus tentang ${form.materi}. 2) Identifikasi informasi penting dan konsep yang digunakan. 3) Selesaikan tugas latihan, lalu jelaskan langkah atau alasan jawabanmu.`,
+    petunjuk: `1) Tulis identitasmu pada kolom yang tersedia. 2) Bacalah setiap perintah dengan teliti. 3) Kerjakan tugas sesuai urutan. 4) Tuliskan jawaban pada garis/ruang kosong yang disediakan. 5) Diskusikan bagian yang sulit dengan teman kelompokmu.`,
+    aktivitas: `1) Jelaskan dengan bahasamu sendiri apa yang kamu pahami tentang ${form.materi}.\nJawaban: ____________________________________________\n\n2) Berikan 2 contoh penerapan ${form.materi} yang kamu temui dalam kehidupan sehari-hari.\nJawaban: ____________________________________________\n\n3) Selesaikan latihan berikut berdasarkan konsep ${form.materi}, tuliskan langkahnya secara runtut.\nJawaban: ____________________________________________\n\n4) Refleksi: hal baru apa yang kamu pelajari hari ini dan bagian mana yang masih ingin kamu tanyakan?\nJawaban: ____________________________________________`,
   }));
 
   return {
