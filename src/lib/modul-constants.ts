@@ -70,3 +70,15 @@ export function formatKopDinas(kabupaten: string): string {
   if (clean.startsWith("KAB")) return `DINAS PENDIDIKAN ${clean}`;
   return `DINAS PENDIDIKAN KABUPATEN ${clean}`;
 }
+
+// Baris paling atas kop: "PEMERINTAH KABUPATEN X" atau "PEMERINTAH KOTA X"
+// sesuai isian pengguna. Kalau pengguna sudah menuliskan "Kabupaten"/"Kota"
+// di depan nama daerah, gunakan apa adanya; kalau tidak, tambahkan "KABUPATEN".
+export function formatPemerintahHeader(kabupaten: string): string {
+  if (!kabupaten) return "PEMERINTAH REPUBLIK INDONESIA";
+  const clean = kabupaten.trim().toUpperCase();
+  if (clean.startsWith("PEMERINTAH")) return clean;
+  if (clean.includes("KOTA")) return `PEMERINTAH ${clean}`;
+  if (clean.startsWith("KAB")) return `PEMERINTAH ${clean}`;
+  return `PEMERINTAH KABUPATEN ${clean}`;
+}
