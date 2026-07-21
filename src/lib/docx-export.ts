@@ -101,6 +101,43 @@ function rubrikTable(rubrik: ModulHasil["rubrikData"]): Table {
   });
 }
 
+function identitasTable(): Table {
+  const border = { style: BorderStyle.SINGLE, size: 4, color: "666666" };
+  const borders = { top: border, bottom: border, left: border, right: border };
+  const label = (t: string) => new TableCell({
+    width: { size: 2000, type: WidthType.DXA }, borders,
+    shading: { fill: "FEF3C7", type: ShadingType.CLEAR, color: "auto" },
+    margins: { top: 60, bottom: 60, left: 100, right: 100 },
+    children: [new Paragraph({ children: [new TextRun({ text: t, bold: true })] })],
+  });
+  const blank = (span = 2500) => new TableCell({
+    width: { size: span, type: WidthType.DXA }, borders,
+    margins: { top: 60, bottom: 60, left: 100, right: 100 },
+    children: [new Paragraph({ children: [new TextRun("")] })],
+  });
+  return new Table({
+    width: { size: 9000, type: WidthType.DXA },
+    columnWidths: [2000, 2500, 2000, 2500],
+    rows: [
+      new TableRow({ children: [label("Nama"), blank(2500), label("Kelas"), blank(2500)] }),
+      new TableRow({ children: [label("No. Absen"), blank(2500), label("Tanggal"), blank(2500)] }),
+      new TableRow({ children: [label("Kelompok"), new TableCell({
+        width: { size: 7000, type: WidthType.DXA }, borders,
+        margins: { top: 60, bottom: 60, left: 100, right: 100 },
+        columnSpan: 3, children: [new Paragraph({ children: [new TextRun("")] })],
+      })] }),
+    ],
+  });
+}
+
+function blankLine(): Paragraph {
+  return new Paragraph({
+    spacing: { before: 40, after: 40 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "333333", space: 4 } },
+    children: [new TextRun("")],
+  });
+}
+
 export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
   const children: (Paragraph | Table)[] = [];
 
