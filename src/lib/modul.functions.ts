@@ -62,7 +62,7 @@ INSTRUKSI ISI TIAP FIELD (semua wajib terisi konten nyata, minimal 2–4 kalimat
     - pertemuan: angka urut pertemuan, bukan teks.
     - judul: menyebut sub-materi pertemuan.
     - petunjuk: langkah bernomor yang jelas untuk siswa, memuat isyarat MEMAHAMI → MENGAPLIKASI → MEREFLEKSI.
-    - aktivitas: soal / tugas / instruksi kerja spesifik (bukan "kerjakan soal berikut"). Sertakan minimal 3 butir aktivitas/pertanyaan konkret terkait sub-materi, dan pastikan salah satu butir mengajak siswa merefleksi apa yang dipelajari.
+    - aktivitas: LKPD SIAP PAKAI berupa lembar kerja yang bisa langsung diisi siswa. WAJIB berisi MINIMAL 4 butir soal/tugas bernomor 1) 2) 3) 4). Setiap butir HARUS menyertakan RUANG JAWABAN kosong yang siap diisi dengan menulis "Jawaban: ____________________________________________" (garis bawah panjang) tepat setelah pertanyaan, atau tabel isian dengan sel-sel kosong bila cocok. Butir konkret dan spesifik terkait sub-materi (bukan "kerjakan soal berikut"), variatif (isian singkat, uraian, mencocokkan/tabel, refleksi), dan salah satunya mengajak siswa MEREFLEKSI apa yang dipelajari.
 16. kuisData: MINIMAL 5 pertanyaan sumatif konkret tentang "${form.materi}" (variasi tingkat kognitif C2–C5), tiap item WAJIB punya field nomor berupa angka dan kunci JAWABAN LENGKAP (bukan hanya A/B/C), bernomor mulai 1.
 17. rubrikData: MINIMAL 4 kriteria penilaian yang RELEVAN dengan tujuan pembelajaran "${form.materi}" (mis. Ketepatan Konsep, Kolaborasi, Komunikasi, Produk). Tiap kriteria WAJIB memiliki 4 deskriptor tingkat yang berbeda dan spesifik: sangatBaik, baik, cukup, perluBimbingan (masing-masing 1–2 kalimat deskriptif, bukan "sangat baik" saja).
 
