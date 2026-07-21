@@ -262,9 +262,10 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
     }
     return counter;
   };
-  text(`PEMERINTAH ${(form.provinsi || "REPUBLIK INDONESIA").toUpperCase()}`, { center: true, size: 10 });
+  text(formatPemerintahHeader(form.kabupaten), { center: true, bold: true, size: 10 });
   text(formatKopDinas(form.kabupaten), { center: true, bold: true, size: 11 });
   text(form.sekolah.toUpperCase(), { center: true, bold: true, size: 13 });
+  if (form.alamatSekolah) text(`Alamat: ${form.alamatSekolah}`, { center: true, size: 9 });
   doc.setLineWidth(0.6); doc.line(margin, y, 210 - margin, y); line(2);
   text("MODUL AJAR / RENCANA PEMBELAJARAN", { center: true, bold: true, size: 14 });
   text(hasil.judulModul, { center: true, bold: true, size: 12 });
@@ -331,8 +332,14 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
   text("LAMPIRAN 1 — LKPD", { bold: true, size: 13 });
   hasil.lkpdData.forEach((l) => {
     text(`LKPD Pertemuan ${l.pertemuan}: ${l.judul}`, { bold: true });
+    text("Identitas Peserta Didik:", { bold: true, size: 10 });
+    text("Nama       : ______________________________     Kelas    : ______________", { size: 10 });
+    text("No. Absen  : ______________________________     Tanggal  : ______________", { size: 10 });
+    text("Kelompok   : ______________________________________________________________", { size: 10 });
     text("Petunjuk:", { bold: true }); rich(l.petunjuk);
-    text("Aktivitas:", { bold: true }); rich(l.aktivitas);
+    text("Aktivitas / Soal:", { bold: true }); rich(l.aktivitas);
+    text("Lembar Jawaban Tambahan:", { bold: true, size: 10 });
+    for (let i = 0; i < 5; i++) text("__________________________________________________________________", { size: 10 });
     line(2);
   });
   doc.addPage(); y = margin;
