@@ -3,22 +3,27 @@ import {
   Table, TableRow, TableCell, WidthType, BorderStyle, LevelFormat,
   PageOrientation, ShadingType,
 } from "docx";
-import { parseRichText } from "./rich-text";
+import { parseRichText, countOrderedItems } from "./rich-text";
 import type { ModulHasil, ModulForm } from "./modul-schema";
 import { formatKopDinas } from "./modul-constants";
 
-function richParagraphs(text: string | undefined | null): Paragraph[] {
+function richParagraphs(text: string | undefined | null, startNumber = 1): Paragraph[] {
   const blocks = parseRichText(text);
   if (!blocks.length) return [new Paragraph({ children: [new TextRun("-")] })];
   const out: Paragraph[] = [];
+  let counter = startNumber;
   for (const b of blocks) {
     if (b.kind === "p") {
       out.push(new Paragraph({ children: [new TextRun(b.text)], spacing: { after: 120 } }));
     } else if (b.kind === "ol") {
-      b.items.forEach((t) => out.push(new Paragraph({
-        children: [new TextRun(t)],
-        numbering: { reference: "numlist", level: 0 },
-      })));
+      b.items.forEach((t) => {
+        out.push(new Paragraph({
+          children: [new TextRun(`${counter}. ${t}`)],
+          indent: { left: 480, hanging: 300 },
+          spacing: { after: 60 },
+        }));
+        counter += 1;
+      });
     } else {
       b.items.forEach((t) => out.push(new Paragraph({
         children: [new TextRun(t)],
@@ -109,36 +114,62 @@ export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
 
   children.push(metaTable(form));
 
-  const blocks: [string, string][] = [
-    ["A. Asesmen Awal", hasil.asesmenAwal],
-    ["B. Tujuan Pembelajaran", hasil.tujuanPembelajaran],
-    ["C. Pemahaman Bermakna", hasil.pemahamanBermakna],
-    ["D. Pertanyaan Pemantik", hasil.pertanyaanPemantik],
+  const hasMitra = !!hasil.kemitraanPembelajaran?.trim();
+  let letterIdx = 0;
+  const L = () => String.fromCharCode(65 + letterIdx++);
+
+  const preBlocks: [string, string][] = [
+    [`${L()}. Asesmen Awal`, hasil.asesmenAwal],
+    [`${L()}. Dimensi Profil Lulusan`, hasil.dimensiProfilLulusan],
+    [`${L()}. Tujuan Pembelajaran`, hasil.tujuanPembelajaran],
+    [`${L()}. Praktik Pedagogis`, hasil.praktikPedagogis],
+    [`${L()}. Lingkungan Pembelajaran`, hasil.lingkunganPembelajaran],
   ];
-  for (const [t, b] of blocks) {
+  if (hasMitra) preBlocks.push([`${L()}. Kemitraan Pembelajaran (Opsional)`, hasil.kemitraanPembelajaran]);
+  preBlocks.push([`${L()}. Pemanfaatan Digital`, hasil.pemanfaatanDigital]);
+  preBlocks.push([`${L()}. Pertanyaan Pemantik`, hasil.pertanyaanPemantik]);
+  for (const [t, b] of preBlocks) {
     children.push(heading(t));
     children.push(...richParagraphs(b));
   }
 
-  children.push(heading("E. Kegiatan Pembelajaran"));
+  children.push(heading(`${L()}. Kegiatan Pembelajaran`));
   for (const p of hasil.pertemuanData) {
     children.push(new Paragraph({ children: [new TextRun({ text: `Pertemuan ${p.pertemuan} — ${p.topik}`, bold: true })], spacing: { before: 160, after: 80 } }));
-    for (const [k, v] of [["Tujuan", p.tujuan], ["Kegiatan Pembuka", p.pembuka], ["Kegiatan Inti", p.inti], ["Kegiatan Penutup", p.penutup]] as const) {
+    let n = 1;
+    for (const [k, v] of [["Kegiatan Pembuka", p.pembuka], ["Kegiatan Inti", p.inti], ["Kegiatan Penutup", p.penutup]] as const) {
       children.push(new Paragraph({ children: [new TextRun({ text: `${k}:`, bold: true })], spacing: { before: 100 } }));
-      children.push(...richParagraphs(v));
+      children.push(...richParagraphs(v, n));
+      n += countOrderedItems(v);
     }
   }
 
   const blocks2: [string, string][] = [
-    ["F. Asesmen Formatif", hasil.asesmenFormatif],
-    ["G. Asesmen Sumatif", hasil.asesmenSumatif],
-    ["H. Refleksi Guru", hasil.refleksiGuru],
-    ["I. Refleksi Siswa", hasil.refleksiSiswa],
+    [`${L()}. Asesmen Formatif`, hasil.asesmenFormatif],
+    [`${L()}. Asesmen Sumatif`, hasil.asesmenSumatif],
+    [`${L()}. Refleksi Guru`, hasil.refleksiGuru],
+    [`${L()}. Refleksi Siswa`, hasil.refleksiSiswa],
   ];
   for (const [t, b] of blocks2) {
     children.push(heading(t));
     children.push(...richParagraphs(b));
   }
+
+  // Tanda tangan sebelum lampiran
+  const tgl = new Date(form.tanggalPembuatan).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  const sigBorder = { top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" } };
+  const sigCell = (lines: (string | { text: string; bold?: boolean })[]) => new TableCell({
+    width: { size: 4500, type: WidthType.DXA }, borders: sigBorder,
+    children: lines.map((l) => new Paragraph({ children: [typeof l === "string" ? new TextRun(l) : new TextRun({ text: l.text, bold: l.bold })] })),
+  });
+  children.push(new Paragraph({ spacing: { before: 400 }, children: [new TextRun("")] }));
+  children.push(new Table({
+    width: { size: 9000, type: WidthType.DXA }, columnWidths: [4500, 4500],
+    rows: [new TableRow({ children: [
+      sigCell(["Mengetahui,", "Kepala Sekolah,", "", "", "", { text: form.kepalaSekolah || "(_______________)", bold: true }, `NIP. ${form.nipKepalaSekolah || "-"}`]),
+      sigCell([`${form.kabupaten}, ${tgl}`, "Guru Kelas/Mapel,", "", "", "", { text: form.namaGuru, bold: true }, `NIP. ${form.nip || "-"}`]),
+    ] })],
+  }));
 
   children.push(new Paragraph({ pageBreakBefore: true, heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: "LAMPIRAN 1 — Lembar Kerja Peserta Didik (LKPD)", bold: true })] }));
   for (const l of hasil.lkpdData) {
@@ -160,21 +191,6 @@ export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
 
   children.push(new Paragraph({ pageBreakBefore: true, heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: "LAMPIRAN 3 — Rubrik Penilaian", bold: true })], spacing: { after: 120 } }));
   children.push(rubrikTable(hasil.rubrikData));
-
-  const tgl = new Date(form.tanggalPembuatan).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-  children.push(new Paragraph({ spacing: { before: 400 }, children: [new TextRun("")] }));
-  const sigBorder = { top: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, bottom: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, left: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" }, right: { style: BorderStyle.NONE, size: 0, color: "FFFFFF" } };
-  const sigCell = (lines: (string | { text: string; bold?: boolean })[]) => new TableCell({
-    width: { size: 4500, type: WidthType.DXA }, borders: sigBorder,
-    children: lines.map((l) => new Paragraph({ children: [typeof l === "string" ? new TextRun(l) : new TextRun({ text: l.text, bold: l.bold })] })),
-  });
-  children.push(new Table({
-    width: { size: 9000, type: WidthType.DXA }, columnWidths: [4500, 4500],
-    rows: [new TableRow({ children: [
-      sigCell(["Mengetahui,", "Kepala Sekolah,", "", "", "", { text: form.kepalaSekolah || "(_______________)", bold: true }, `NIP. ${form.nipKepalaSekolah || "-"}`]),
-      sigCell([`${form.kabupaten}, ${tgl}`, "Guru Kelas/Mapel,", "", "", "", { text: form.namaGuru, bold: true }, `NIP. ${form.nip || "-"}`]),
-    ] })],
-  }));
 
   const doc = new Document({
     creator: "ModulAjar",

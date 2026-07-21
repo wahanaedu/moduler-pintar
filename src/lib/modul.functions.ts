@@ -33,26 +33,28 @@ INSTRUKSI ISI TIAP FIELD (semua wajib terisi konten nyata, minimal 2–4 kalimat
 2. asesmenAwal: uraikan teknik diagnostik konkret (contoh pertanyaan lisan / kuis pemetaan / observasi) beserta 3–5 CONTOH PERTANYAAN diagnostik spesifik tentang "${form.materi}" untuk memetakan pengetahuan awal peserta didik.
 3. dimensiProfilLulusan: jabarkan tiap dimensi yang dipilih (${form.profilLulusan.join(", ")}) dan JELASKAN indikator perilaku siswa yang akan diamati dalam pembelajaran "${form.materi}". Kaitkan tiap dimensi dengan prinsip pembelajaran mendalam (berkesadaran / bermakna / menggembirakan).
 4. tujuanPembelajaran: 3–5 tujuan operasional (audience-behavior-condition-degree), pakai KKO Bloom yang bervariasi (C2–C5), semuanya membahas "${form.materi}". Nomori 1) 2) 3).
-5. pemahamanBermakna: 2–3 kalimat berisi big idea/konsep esensial dari "${form.materi}" yang relevan dengan kehidupan siswa (prinsip BERMAKNA).
-6. pertanyaanPemantik: 3 pertanyaan pemantik terbuka yang provokatif dan spesifik terhadap "${form.materi}". Nomori 1) 2) 3).
-7. pertemuanData: TEPAT ${form.jumlahPertemuan} objek berurutan 1..${form.jumlahPertemuan}. Setiap objek WAJIB punya field pertemuan berupa angka (1, 2, 3, dst.). Setiap pertemuan HARUS berbeda topik/sub-materi dan bertahap (scaffolded) menuju penguasaan "${form.materi}".
+5. praktikPedagogis: jelaskan MODEL PEMBELAJARAN "${form.modelPembelajaran}" yang dipakai beserta TAHAPAN/SINTAKS singkatnya (nomori 1) 2) 3) …). Ringkas namun konkret (3–6 kalimat).
+6. lingkunganPembelajaran: ringkas suasana & pengaturan lingkungan belajar yang dipakai — di dalam kelas (tata ruang, kelompok, sumber belajar) MAUPUN di luar kelas (halaman, perpustakaan, lingkungan sekitar) bila relevan dengan "${form.materi}". 2–4 kalimat.
+7. kemitraanPembelajaran: sebutkan mitra pembelajaran yang mendukung (mis. orang tua/wali, komite, guru sejawat, narasumber, komunitas). Sifatnya OPSIONAL — jika tidak diperlukan tulis "Tidak ada mitra khusus untuk pembelajaran ini." 1–3 kalimat.
+8. pemanfaatanDigital: jelaskan penggunaan alat digital dalam pembelajaran "${form.materi}" — mis. papan interaktif digital, laptop, proyektor, video, audio, aplikasi/perangkat lunak — dan bagaimana alat itu dipakai. 2–4 kalimat.
+9. pertanyaanPemantik: 3 pertanyaan pemantik terbuka yang provokatif dan spesifik terhadap "${form.materi}". Nomori 1) 2) 3).
+10. pertemuanData: TEPAT ${form.jumlahPertemuan} objek berurutan 1..${form.jumlahPertemuan}. Setiap objek WAJIB punya field pertemuan berupa angka (1, 2, 3, dst.). Setiap pertemuan HARUS berbeda topik/sub-materi dan bertahap (scaffolded) menuju penguasaan "${form.materi}".
    - pertemuan: angka urut pertemuan, bukan teks.
    - topik: sub-materi konkret pada pertemuan itu.
-   - tujuan: 1–2 tujuan khusus pertemuan itu, KKO operasional, TURUNAN dari tujuanPembelajaran.
    - pembuka (5–10 menit): salam, doa, apersepsi terkait sub-materi, penyampaian tujuan, pemantik singkat, serta membangun suasana MENGGEMBIRAKAN dan BERKESADARAN (siswa menyadari apa & mengapa belajar). Tulis sebagai langkah bernomor 1) 2) 3).
    - inti (45–60 menit): TULIS SINTAKS "${form.modelPembelajaran}" secara eksplisit sebagai tahap bernomor, dan pada setiap tahap TANDAI pengalaman belajar mendalam yang dominan: [MEMAHAMI], [MENGAPLIKASI], atau [MEREFLEKSI]. Contoh format: "1) Orientasi masalah [MEMAHAMI] — ...". Sebutkan aktivitas guru & siswa yang spesifik dengan sub-materi pertemuan itu, dan bagaimana prinsip bermakna/menggembirakan diwujudkan.
    - penutup (5–10 menit): siswa MEREFLEKSI proses & hasil belajar (metakognisi), kesimpulan bersama, penugasan / info pertemuan berikutnya. Langkah bernomor.
-8. asesmenFormatif: teknik + instrumen (mis. observasi diskusi, exit ticket, presentasi LKPD) beserta contoh indikator penilaian selama proses pembelajaran "${form.materi}".
-9. asesmenSumatif: bentuk asesmen akhir (tes tulis / proyek / produk), cakupan indikator, dan cara penskoran ringkas.
-10. refleksiGuru: 4–5 pertanyaan refleksi untuk guru sesudah mengajar "${form.materi}" (efektivitas strategi, kendala, tindak lanjut), termasuk sejauh mana pembelajaran mendalam terwujud (berkesadaran/bermakna/menggembirakan). Nomori.
-11. refleksiSiswa: 4–5 pertanyaan refleksi bahasa siswa tentang pengalaman belajar "${form.materi}", meliputi kesadaran belajar (apa yang saya pahami), makna (mengapa penting bagi saya), dan perasaan (bagaimana suasana belajar). Nomori.
-12. lkpdData: TEPAT ${form.jumlahPertemuan} LKPD (1 per pertemuan, sesuai sub-materi pertemuan itu). Setiap objek WAJIB punya field pertemuan berupa angka.
+11. asesmenFormatif: teknik + instrumen (mis. observasi diskusi, exit ticket, presentasi LKPD) beserta contoh indikator penilaian selama proses pembelajaran "${form.materi}".
+12. asesmenSumatif: bentuk asesmen akhir (tes tulis / proyek / produk), cakupan indikator, dan cara penskoran ringkas.
+13. refleksiGuru: 4–5 pertanyaan refleksi untuk guru sesudah mengajar "${form.materi}". Nomori.
+14. refleksiSiswa: 4–5 pertanyaan refleksi bahasa siswa tentang pengalaman belajar "${form.materi}". Nomori.
+15. lkpdData: TEPAT ${form.jumlahPertemuan} LKPD (1 per pertemuan, sesuai sub-materi pertemuan itu). Setiap objek WAJIB punya field pertemuan berupa angka.
     - pertemuan: angka urut pertemuan, bukan teks.
     - judul: menyebut sub-materi pertemuan.
     - petunjuk: langkah bernomor yang jelas untuk siswa, memuat isyarat MEMAHAMI → MENGAPLIKASI → MEREFLEKSI.
     - aktivitas: soal / tugas / instruksi kerja spesifik (bukan "kerjakan soal berikut"). Sertakan minimal 3 butir aktivitas/pertanyaan konkret terkait sub-materi, dan pastikan salah satu butir mengajak siswa merefleksi apa yang dipelajari.
-13. kuisData: MINIMAL 5 pertanyaan sumatif konkret tentang "${form.materi}" (variasi tingkat kognitif C2–C5), tiap item WAJIB punya field nomor berupa angka dan kunci JAWABAN LENGKAP (bukan hanya A/B/C), bernomor mulai 1.
-14. rubrikData: MINIMAL 4 kriteria penilaian yang RELEVAN dengan tujuan pembelajaran "${form.materi}" (mis. Ketepatan Konsep, Kolaborasi, Komunikasi, Produk). Tiap kriteria WAJIB memiliki 4 deskriptor tingkat yang berbeda dan spesifik: sangatBaik, baik, cukup, perluBimbingan (masing-masing 1–2 kalimat deskriptif, bukan "sangat baik" saja).
+16. kuisData: MINIMAL 5 pertanyaan sumatif konkret tentang "${form.materi}" (variasi tingkat kognitif C2–C5), tiap item WAJIB punya field nomor berupa angka dan kunci JAWABAN LENGKAP (bukan hanya A/B/C), bernomor mulai 1.
+17. rubrikData: MINIMAL 4 kriteria penilaian yang RELEVAN dengan tujuan pembelajaran "${form.materi}" (mis. Ketepatan Konsep, Kolaborasi, Komunikasi, Produk). Tiap kriteria WAJIB memiliki 4 deskriptor tingkat yang berbeda dan spesifik: sangatBaik, baik, cukup, perluBimbingan (masing-masing 1–2 kalimat deskriptif, bukan "sangat baik" saja).
 
 ATURAN UMUM:
 - Semua field wajib terisi. Tidak boleh string kosong, "-", "…", atau "akan ditentukan".
@@ -130,6 +132,10 @@ function createFallbackHasil(form: ModulFormInput): ModulHasil {
     dimensiProfilLulusan: `Dimensi ${form.profilLulusan.join(", ")} dikembangkan melalui aktivitas memahami, mendiskusikan, dan menyajikan pemecahan masalah terkait ${form.materi}. Guru mengamati kemampuan siswa bertanya, memberi alasan, bekerja sama, dan menyelesaikan tugas secara bertanggung jawab.`,
     tujuanPembelajaran: `1) Peserta didik mampu menjelaskan konsep utama ${form.materi} dengan bahasa sendiri. 2) Peserta didik mampu menerapkan konsep ${form.materi} pada contoh soal atau situasi kontekstual. 3) Peserta didik mampu menganalisis kesalahan umum dan memperbaiki strategi penyelesaian terkait ${form.materi}.`,
     pemahamanBermakna: `${form.materi} membantu peserta didik memahami konsep yang berguna dalam kegiatan belajar dan kehidupan sehari-hari. Dengan menguasai materi ini, siswa dapat berpikir lebih runtut, teliti, dan mampu menjelaskan alasan dari setiap jawaban atau keputusan.`,
+    praktikPedagogis: `Model pembelajaran yang digunakan adalah ${form.modelPembelajaran}. Tahapan ringkas: 1) Orientasi/penyajian masalah kontekstual tentang ${form.materi}. 2) Pengorganisasian belajar dalam kelompok kecil. 3) Bimbingan penyelidikan/latihan terstruktur. 4) Penyajian hasil karya siswa. 5) Analisis, evaluasi, dan refleksi bersama.`,
+    lingkunganPembelajaran: `Pembelajaran dilaksanakan di dalam kelas yang tertata untuk diskusi kelompok, serta memanfaatkan ruang luar kelas (halaman/perpustakaan/lingkungan sekitar) bila memungkinkan. Lingkungan dijaga aman, inklusif, dan mendukung interaksi positif antarsiswa selama mempelajari ${form.materi}.`,
+    kemitraanPembelajaran: `Opsional: orang tua/wali dilibatkan sebagai pendamping belajar di rumah; guru sejawat sebagai mitra kolaborasi; serta narasumber lokal (bila relevan dengan ${form.materi}) untuk memperkaya pengalaman belajar peserta didik.`,
+    pemanfaatanDigital: `Pembelajaran memanfaatkan alat digital sesuai ketersediaan, antara lain: laptop/komputer guru, proyektor/LCD, papan tulis interaktif (bila tersedia), tayangan video pembelajaran, audio penjelasan, serta gambar/animasi pendukung materi ${form.materi}. Alat digital digunakan untuk memperjelas konsep, memantik diskusi, dan memperluas sumber belajar.`,
     pertanyaanPemantik: `1) Kapan kamu pernah menemukan contoh ${form.materi} dalam kehidupan sehari-hari? 2) Mengapa memahami ${form.materi} penting untuk menyelesaikan masalah? 3) Strategi apa yang dapat digunakan agar tidak keliru saat mempelajari ${form.materi}?`,
     pertemuanData,
     asesmenFormatif: `Asesmen formatif dilakukan melalui observasi diskusi, pemeriksaan LKPD, dan exit ticket tentang ${form.materi}. Indikator yang diamati meliputi ketepatan konsep, kejelasan alasan, keaktifan bertanya/menjawab, dan kemampuan memperbaiki kesalahan setelah mendapat umpan balik.`,
@@ -213,6 +219,10 @@ function normalizeHasil(partial: unknown, form: ModulFormInput): ModulHasil {
     dimensiProfilLulusan: pickText(fallback.dimensiProfilLulusan, source.dimensiProfilLulusan, source.profilLulusan),
     tujuanPembelajaran: pickText(fallback.tujuanPembelajaran, source.tujuanPembelajaran, source.tujuan),
     pemahamanBermakna: pickText(fallback.pemahamanBermakna, source.pemahamanBermakna),
+    praktikPedagogis: pickText(fallback.praktikPedagogis, source.praktikPedagogis, source.praktik, source.modelPembelajaranDetail),
+    lingkunganPembelajaran: pickText(fallback.lingkunganPembelajaran, source.lingkunganPembelajaran, source.lingkungan),
+    kemitraanPembelajaran: pickText(fallback.kemitraanPembelajaran, source.kemitraanPembelajaran, source.kemitraan),
+    pemanfaatanDigital: pickText(fallback.pemanfaatanDigital, source.pemanfaatanDigital, source.digital, source.alatDigital),
     pertanyaanPemantik: pickText(fallback.pertanyaanPemantik, source.pertanyaanPemantik),
     pertemuanData,
     asesmenFormatif: pickText(fallback.asesmenFormatif, source.asesmenFormatif),
@@ -247,14 +257,16 @@ function findMissingFields(h: ModulHasil, jumlahPertemuan: number): string[] {
   if (tooShort(h.asesmenAwal, 40)) missing.push("asesmenAwal");
   if (tooShort(h.dimensiProfilLulusan, 40)) missing.push("dimensiProfilLulusan");
   if (tooShort(h.tujuanPembelajaran, 40)) missing.push("tujuanPembelajaran");
-  if (tooShort(h.pemahamanBermakna, 30)) missing.push("pemahamanBermakna");
+  if (tooShort(h.praktikPedagogis, 30)) missing.push("praktikPedagogis");
+  if (tooShort(h.lingkunganPembelajaran, 30)) missing.push("lingkunganPembelajaran");
+  if (tooShort(h.pemanfaatanDigital, 30)) missing.push("pemanfaatanDigital");
   if (tooShort(h.pertanyaanPemantik, 30)) missing.push("pertanyaanPemantik");
   if (tooShort(h.asesmenFormatif, 40)) missing.push("asesmenFormatif");
   if (tooShort(h.asesmenSumatif, 40)) missing.push("asesmenSumatif");
   if (tooShort(h.refleksiGuru, 30)) missing.push("refleksiGuru");
   if (tooShort(h.refleksiSiswa, 30)) missing.push("refleksiSiswa");
   h.pertemuanData.forEach((p, i) => {
-    if (tooShort(p.topik, 4) || tooShort(p.tujuan, 15) || tooShort(p.pembuka, 30) || tooShort(p.inti, 60) || tooShort(p.penutup, 30)) {
+    if (tooShort(p.topik, 4) || tooShort(p.pembuka, 30) || tooShort(p.inti, 60) || tooShort(p.penutup, 30)) {
       missing.push(`pertemuanData[${i + 1}]`);
     }
   });

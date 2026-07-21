@@ -94,15 +94,18 @@ export function parseRichText(input: string | undefined | null): Block[] {
   return blocks;
 }
 
-export function RichText({ text }: { text: string | undefined | null }) {
+export function RichText({ text, startNumber }: { text: string | undefined | null; startNumber?: number }) {
   const blocks = parseRichText(text);
   if (blocks.length === 0) return null;
+  let counter = startNumber ?? 1;
   return (
     <>
       {blocks.map((b, idx) => {
         if (b.kind === "ol") {
+          const start = counter;
+          counter += b.items.length;
           return (
-            <ol key={idx} className="rich-list">
+            <ol key={idx} className="rich-list" start={start}>
               {b.items.map((t, i) => <li key={i}>{t}</li>)}
             </ol>
           );
@@ -118,4 +121,10 @@ export function RichText({ text }: { text: string | undefined | null }) {
       })}
     </>
   );
+}
+
+// How many <li> would appear in ordered blocks — used to continue numbering
+// sequentially across sibling RichText sections.
+export function countOrderedItems(text: string | undefined | null): number {
+  return parseRichText(text).reduce((n, b) => n + (b.kind === "ol" ? b.items.length : 0), 0);
 }

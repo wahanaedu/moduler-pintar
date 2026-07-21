@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Printer, Download, Loader2, AlertTriangle } from "lucide-react";
 import jsPDF from "jspdf";
-import { RichText, parseRichText } from "@/lib/rich-text";
+import { RichText, parseRichText, countOrderedItems } from "@/lib/rich-text";
 import { exportModulDocx } from "@/lib/docx-export";
 
 export const Route = createFileRoute("/_authenticated/modul/$id")({
@@ -100,25 +100,61 @@ function ModulPage() {
           </table>
 
           <Blok title="A. Asesmen Awal" body={hasil.asesmenAwal} />
-          <Blok title="B. Tujuan Pembelajaran" body={hasil.tujuanPembelajaran} />
-          <Blok title="C. Pemahaman Bermakna" body={hasil.pemahamanBermakna} />
-          <Blok title="D. Pertanyaan Pemantik" body={hasil.pertanyaanPemantik} />
+          <Blok title="B. Dimensi Profil Lulusan" body={hasil.dimensiProfilLulusan} />
+          <Blok title="C. Tujuan Pembelajaran" body={hasil.tujuanPembelajaran} />
+          <Blok title="D. Praktik Pedagogis" body={hasil.praktikPedagogis} />
+          <Blok title="E. Lingkungan Pembelajaran" body={hasil.lingkunganPembelajaran} />
+          {hasil.kemitraanPembelajaran?.trim() ? (
+            <Blok title="F. Kemitraan Pembelajaran (Opsional)" body={hasil.kemitraanPembelajaran} />
+          ) : null}
+          <Blok title={`${hasil.kemitraanPembelajaran?.trim() ? "G" : "F"}. Pemanfaatan Digital`} body={hasil.pemanfaatanDigital} />
+          <Blok title={`${hasil.kemitraanPembelajaran?.trim() ? "H" : "G"}. Pertanyaan Pemantik`} body={hasil.pertanyaanPemantik} />
 
-          <h2>E. Kegiatan Pembelajaran</h2>
-          {hasil.pertemuanData.map((p) => (
-            <div key={p.pertemuan} className="mb-4">
-              <h3>Pertemuan {p.pertemuan} — {p.topik}</h3>
-              <p><strong>Tujuan:</strong></p><RichText text={p.tujuan} />
-              <p><strong>Kegiatan Pembuka:</strong></p><RichText text={p.pembuka} />
-              <p><strong>Kegiatan Inti:</strong></p><RichText text={p.inti} />
-              <p><strong>Kegiatan Penutup:</strong></p><RichText text={p.penutup} />
+          <h2>{hasil.kemitraanPembelajaran?.trim() ? "I" : "H"}. Kegiatan Pembelajaran</h2>
+          {hasil.pertemuanData.map((p) => {
+            let n = 1;
+            const pembukaStart = n; n += countOrderedItems(p.pembuka);
+            const intiStart = n; n += countOrderedItems(p.inti);
+            const penutupStart = n;
+            return (
+              <div key={p.pertemuan} className="mb-4">
+                <h3>Pertemuan {p.pertemuan} — {p.topik}</h3>
+                <p><strong>Kegiatan Pembuka:</strong></p>
+                <RichText text={p.pembuka} startNumber={pembukaStart} />
+                <p><strong>Kegiatan Inti:</strong></p>
+                <RichText text={p.inti} startNumber={intiStart} />
+                <p><strong>Kegiatan Penutup:</strong></p>
+                <RichText text={p.penutup} startNumber={penutupStart} />
+              </div>
+            );
+          })}
+
+          {(() => {
+            const base = hasil.kemitraanPembelajaran?.trim() ? 9 : 8; // I or H
+            const L = (offset: number) => String.fromCharCode(65 + base + offset); // next letters
+            return (
+              <>
+                <Blok title={`${L(0)}. Asesmen Formatif`} body={hasil.asesmenFormatif} />
+                <Blok title={`${L(1)}. Asesmen Sumatif`} body={hasil.asesmenSumatif} />
+                <Blok title={`${L(2)}. Refleksi Guru`} body={hasil.refleksiGuru} />
+                <Blok title={`${L(3)}. Refleksi Siswa`} body={hasil.refleksiSiswa} />
+              </>
+            );
+          })()}
+
+          {/* Tanda tangan sebelum lampiran */}
+          <div className="mt-12 grid grid-cols-2 gap-8 text-sm">
+            <div>
+              <p>Mengetahui,<br />Kepala Sekolah,</p>
+              <div className="h-16" />
+              <p><strong>{form.kepalaSekolah || "(_______________)"}</strong><br />NIP. {form.nipKepalaSekolah || "-"}</p>
             </div>
-          ))}
-
-          <Blok title="F. Asesmen Formatif" body={hasil.asesmenFormatif} />
-          <Blok title="G. Asesmen Sumatif" body={hasil.asesmenSumatif} />
-          <Blok title="H. Refleksi Guru" body={hasil.refleksiGuru} />
-          <Blok title="I. Refleksi Siswa" body={hasil.refleksiSiswa} />
+            <div>
+              <p>{form.kabupaten}, {new Date(form.tanggalPembuatan).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}<br />Guru Kelas/Mapel,</p>
+              <div className="h-16" />
+              <p><strong>{form.namaGuru}</strong><br />NIP. {form.nip || "-"}</p>
+            </div>
+          </div>
 
           <h2 className="page-break">LAMPIRAN 1 — Lembar Kerja Peserta Didik (LKPD)</h2>
           {hasil.lkpdData.map((l) => (
@@ -155,19 +191,6 @@ function ModulPage() {
               ))}
             </tbody>
           </table>
-
-          <div className="mt-12 grid grid-cols-2 gap-8 text-sm">
-            <div>
-              <p>Mengetahui,<br />Kepala Sekolah,</p>
-              <div className="h-16" />
-              <p><strong>{form.kepalaSekolah || "(_______________)"}</strong><br />NIP. {form.nipKepalaSekolah || "-"}</p>
-            </div>
-            <div>
-              <p>{form.kabupaten}, {new Date(form.tanggalPembuatan).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}<br />Guru Kelas/Mapel,</p>
-              <div className="h-16" />
-              <p><strong>{form.namaGuru}</strong><br />NIP. {form.nip || "-"}</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
@@ -199,14 +222,15 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
     }
     y += 1;
   };
-  const rich = (s: string) => {
+  const rich = (s: string, startNumber = 1) => {
     const blocks = parseRichText(s);
-    if (!blocks.length) { text("-"); return; }
+    if (!blocks.length) { text("-"); return startNumber; }
+    let counter = startNumber;
     for (const b of blocks) {
       if (b.kind === "p") { text(b.text); continue; }
       const indent = 6;
       b.items.forEach((it, i) => {
-        const marker = b.kind === "ol" ? `${i + 1}.` : "•";
+        const marker = b.kind === "ol" ? `${counter + i}.` : "•";
         doc.setFont("helvetica", "normal");
         doc.setFontSize(11);
         const lines = doc.splitTextToSize(it, width - indent);
@@ -218,8 +242,10 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
         });
         y += 0.5;
       });
+      if (b.kind === "ol") counter += b.items.length;
       y += 1;
     }
+    return counter;
   };
   text(`PEMERINTAH ${form.provinsi.toUpperCase()}`, { center: true, size: 10 });
   text(formatKopDinas(form.kabupaten), { center: true, bold: true, size: 11 });
@@ -239,27 +265,53 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
   line(2);
   const blocks: [string, string][] = [
     ["A. Asesmen Awal", hasil.asesmenAwal],
-    ["B. Tujuan Pembelajaran", hasil.tujuanPembelajaran],
-    ["C. Pemahaman Bermakna", hasil.pemahamanBermakna],
-    ["D. Pertanyaan Pemantik", hasil.pertanyaanPemantik],
+    ["B. Dimensi Profil Lulusan", hasil.dimensiProfilLulusan],
+    ["C. Tujuan Pembelajaran", hasil.tujuanPembelajaran],
+    ["D. Praktik Pedagogis", hasil.praktikPedagogis],
+    ["E. Lingkungan Pembelajaran", hasil.lingkunganPembelajaran],
   ];
   blocks.forEach(([t, b]) => { text(t, { bold: true, size: 12 }); rich(b); });
-  text("E. Kegiatan Pembelajaran", { bold: true, size: 12 });
+  const hasMitra = !!hasil.kemitraanPembelajaran?.trim();
+  let letterIdx = 5; // F
+  const nextLetter = () => String.fromCharCode(65 + letterIdx++);
+  if (hasMitra) {
+    text(`${nextLetter()}. Kemitraan Pembelajaran (Opsional)`, { bold: true, size: 12 });
+    rich(hasil.kemitraanPembelajaran);
+  }
+  text(`${nextLetter()}. Pemanfaatan Digital`, { bold: true, size: 12 }); rich(hasil.pemanfaatanDigital);
+  text(`${nextLetter()}. Pertanyaan Pemantik`, { bold: true, size: 12 }); rich(hasil.pertanyaanPemantik);
+  text(`${nextLetter()}. Kegiatan Pembelajaran`, { bold: true, size: 12 });
   hasil.pertemuanData.forEach((p) => {
     text(`Pertemuan ${p.pertemuan} — ${p.topik}`, { bold: true });
-    text("Tujuan:", { bold: true }); rich(p.tujuan);
-    text("Kegiatan Pembuka:", { bold: true }); rich(p.pembuka);
-    text("Kegiatan Inti:", { bold: true }); rich(p.inti);
-    text("Kegiatan Penutup:", { bold: true }); rich(p.penutup);
+    let n = 1;
+    text("Kegiatan Pembuka:", { bold: true }); n = rich(p.pembuka, n);
+    text("Kegiatan Inti:", { bold: true }); n = rich(p.inti, n);
+    text("Kegiatan Penutup:", { bold: true }); rich(p.penutup, n);
     line(2);
   });
   const blocks2: [string, string][] = [
-    ["F. Asesmen Formatif", hasil.asesmenFormatif],
-    ["G. Asesmen Sumatif", hasil.asesmenSumatif],
-    ["H. Refleksi Guru", hasil.refleksiGuru],
-    ["I. Refleksi Siswa", hasil.refleksiSiswa],
+    [`${nextLetter()}. Asesmen Formatif`, hasil.asesmenFormatif],
+    [`${nextLetter()}. Asesmen Sumatif`, hasil.asesmenSumatif],
+    [`${nextLetter()}. Refleksi Guru`, hasil.refleksiGuru],
+    [`${nextLetter()}. Refleksi Siswa`, hasil.refleksiSiswa],
   ];
   blocks2.forEach(([t, b]) => { text(t, { bold: true, size: 12 }); rich(b); });
+
+  // Tanda tangan sebelum lampiran
+  const tgl = new Date(form.tanggalPembuatan).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  line(6);
+  text("Mengetahui,", { size: 10 });
+  text("Kepala Sekolah,", { size: 10 });
+  line(14);
+  text(form.kepalaSekolah || "(_______________)", { bold: true, size: 10 });
+  text(`NIP. ${form.nipKepalaSekolah || "-"}`, { size: 10 });
+  line(4);
+  text(`${form.kabupaten}, ${tgl}`, { size: 10 });
+  text("Guru Kelas/Mapel,", { size: 10 });
+  line(14);
+  text(form.namaGuru, { bold: true, size: 10 });
+  text(`NIP. ${form.nip || "-"}`, { size: 10 });
+
   doc.addPage(); y = margin;
   text("LAMPIRAN 1 — LKPD", { bold: true, size: 13 });
   hasil.lkpdData.forEach((l) => {
