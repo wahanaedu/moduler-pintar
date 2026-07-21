@@ -2,14 +2,23 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
+async function checkIsAdmin(userId: string): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (error) return false;
+  return Boolean(data);
+}
+
 export const isAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    return { isAdmin: Boolean(data), userId: context.userId };
+    const adminFlag = await checkIsAdmin(context.userId);
+    return { isAdmin: adminFlag, userId: context.userId };
   });
 
 export const getMyApprovalStatus = createServerFn({ method: "GET" })
@@ -20,13 +29,10 @@ export const getMyApprovalStatus = createServerFn({ method: "GET" })
       .select("approved, full_name, email")
       .eq("id", context.userId)
       .maybeSingle();
-    const { data: adminFlag } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const adminFlag = await checkIsAdmin(context.userId);
     return {
       approved: profile?.approved ?? false,
-      isAdmin: Boolean(adminFlag),
+      isAdmin: adminFlag,
       fullName: profile?.full_name ?? null,
       email: profile?.email ?? null,
     };
@@ -35,10 +41,7 @@ export const getMyApprovalStatus = createServerFn({ method: "GET" })
 export const listAllUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: adminFlag } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const adminFlag = await checkIsAdmin(context.userId);
     if (!adminFlag) throw new Error("Forbidden: admin only");
 
     const { data: profiles, error } = await context.supabase
@@ -66,10 +69,13 @@ export const setUserApproval = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), approved: z.boolean() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.rpc("approve_user", {
-      _user_id: data.userId,
-      _approved: data.approved,
-    });
+    const adminFlag = await checkIsAdmin(context.userId);
+    if (!adminFlag) throw new Error("Forbidden: admin only");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ approved: data.approved, updated_at: new Date().toISOString() })
+      .eq("id", data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
