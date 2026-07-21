@@ -222,14 +222,15 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
     }
     y += 1;
   };
-  const rich = (s: string) => {
+  const rich = (s: string, startNumber = 1) => {
     const blocks = parseRichText(s);
-    if (!blocks.length) { text("-"); return; }
+    if (!blocks.length) { text("-"); return startNumber; }
+    let counter = startNumber;
     for (const b of blocks) {
       if (b.kind === "p") { text(b.text); continue; }
       const indent = 6;
       b.items.forEach((it, i) => {
-        const marker = b.kind === "ol" ? `${i + 1}.` : "•";
+        const marker = b.kind === "ol" ? `${counter + i}.` : "•";
         doc.setFont("helvetica", "normal");
         doc.setFontSize(11);
         const lines = doc.splitTextToSize(it, width - indent);
@@ -241,8 +242,10 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
         });
         y += 0.5;
       });
+      if (b.kind === "ol") counter += b.items.length;
       y += 1;
     }
+    return counter;
   };
   text(`PEMERINTAH ${form.provinsi.toUpperCase()}`, { center: true, size: 10 });
   text(formatKopDinas(form.kabupaten), { center: true, bold: true, size: 11 });
@@ -262,27 +265,53 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
   line(2);
   const blocks: [string, string][] = [
     ["A. Asesmen Awal", hasil.asesmenAwal],
-    ["B. Tujuan Pembelajaran", hasil.tujuanPembelajaran],
-    ["C. Pemahaman Bermakna", hasil.pemahamanBermakna],
-    ["D. Pertanyaan Pemantik", hasil.pertanyaanPemantik],
+    ["B. Dimensi Profil Lulusan", hasil.dimensiProfilLulusan],
+    ["C. Tujuan Pembelajaran", hasil.tujuanPembelajaran],
+    ["D. Praktik Pedagogis", hasil.praktikPedagogis],
+    ["E. Lingkungan Pembelajaran", hasil.lingkunganPembelajaran],
   ];
   blocks.forEach(([t, b]) => { text(t, { bold: true, size: 12 }); rich(b); });
-  text("E. Kegiatan Pembelajaran", { bold: true, size: 12 });
+  const hasMitra = !!hasil.kemitraanPembelajaran?.trim();
+  let letterIdx = 5; // F
+  const nextLetter = () => String.fromCharCode(65 + letterIdx++);
+  if (hasMitra) {
+    text(`${nextLetter()}. Kemitraan Pembelajaran (Opsional)`, { bold: true, size: 12 });
+    rich(hasil.kemitraanPembelajaran);
+  }
+  text(`${nextLetter()}. Pemanfaatan Digital`, { bold: true, size: 12 }); rich(hasil.pemanfaatanDigital);
+  text(`${nextLetter()}. Pertanyaan Pemantik`, { bold: true, size: 12 }); rich(hasil.pertanyaanPemantik);
+  text(`${nextLetter()}. Kegiatan Pembelajaran`, { bold: true, size: 12 });
   hasil.pertemuanData.forEach((p) => {
     text(`Pertemuan ${p.pertemuan} — ${p.topik}`, { bold: true });
-    text("Tujuan:", { bold: true }); rich(p.tujuan);
-    text("Kegiatan Pembuka:", { bold: true }); rich(p.pembuka);
-    text("Kegiatan Inti:", { bold: true }); rich(p.inti);
-    text("Kegiatan Penutup:", { bold: true }); rich(p.penutup);
+    let n = 1;
+    text("Kegiatan Pembuka:", { bold: true }); n = rich(p.pembuka, n);
+    text("Kegiatan Inti:", { bold: true }); n = rich(p.inti, n);
+    text("Kegiatan Penutup:", { bold: true }); rich(p.penutup, n);
     line(2);
   });
   const blocks2: [string, string][] = [
-    ["F. Asesmen Formatif", hasil.asesmenFormatif],
-    ["G. Asesmen Sumatif", hasil.asesmenSumatif],
-    ["H. Refleksi Guru", hasil.refleksiGuru],
-    ["I. Refleksi Siswa", hasil.refleksiSiswa],
+    [`${nextLetter()}. Asesmen Formatif`, hasil.asesmenFormatif],
+    [`${nextLetter()}. Asesmen Sumatif`, hasil.asesmenSumatif],
+    [`${nextLetter()}. Refleksi Guru`, hasil.refleksiGuru],
+    [`${nextLetter()}. Refleksi Siswa`, hasil.refleksiSiswa],
   ];
   blocks2.forEach(([t, b]) => { text(t, { bold: true, size: 12 }); rich(b); });
+
+  // Tanda tangan sebelum lampiran
+  const tgl = new Date(form.tanggalPembuatan).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  line(6);
+  text("Mengetahui,", { size: 10 });
+  text("Kepala Sekolah,", { size: 10 });
+  line(14);
+  text(form.kepalaSekolah || "(_______________)", { bold: true, size: 10 });
+  text(`NIP. ${form.nipKepalaSekolah || "-"}`, { size: 10 });
+  line(4);
+  text(`${form.kabupaten}, ${tgl}`, { size: 10 });
+  text("Guru Kelas/Mapel,", { size: 10 });
+  line(14);
+  text(form.namaGuru, { bold: true, size: 10 });
+  text(`NIP. ${form.nip || "-"}`, { size: 10 });
+
   doc.addPage(); y = margin;
   text("LAMPIRAN 1 — LKPD", { bold: true, size: 13 });
   hasil.lkpdData.forEach((l) => {
