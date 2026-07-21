@@ -8,7 +8,16 @@ import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 type ModulFormInput = z.infer<typeof ModulFormSchema>;
 
 function buildPrompt(form: ModulFormInput) {
-  return `Anda adalah ahli kurikulum Merdeka Belajar yang menerapkan PENDEKATAN PEMBELAJARAN MENDALAM (Deep Learning) untuk sekolah ${form.tingkatSekolah} di Indonesia. Susun MODUL AJAR yang LENGKAP, KONTEKSTUAL, dan SIAP PAKAI dalam Bahasa Indonesia formal. Semua isi HARUS relevan dan konsisten dengan Materi Pokok dan Tujuan Pembelajaran; bukan sekadar template kosong.
+  const jenjang = form.tingkatSekolah || (parseInt(form.kelas.replace(/\D/g, ""), 10) <= 6 ? "SD" : "SMP");
+  const opsiTambahan = [
+    form.tambahGambar ? "TAMBAHAN GAMBAR/MEDIA: Isi field saranMedia dengan daftar bernomor saran gambar/foto/ilustrasi/video/audio yang cocok untuk tiap pertemuan beserta deskripsi singkat dan alasan pemakaiannya. Selain itu, pada setiap kegiatan inti, sebutkan media visual/audio yang digunakan." : "TANPA GAMBAR/MEDIA: kosongkan field saranMedia (\"\").",
+    form.tambahLK ? "SERTAKAN LKPD lengkap pada lkpdData sesuai jumlah pertemuan." : "TANPA LKPD: kembalikan lkpdData sebagai array kosong []. Jangan menulis LKPD sama sekali.",
+    form.tambahTabel ? "SERTAKAN TABEL yang diperlukan (mis. tabel diferensiasi/kelompok, tabel rincian aktivitas, tabel skoring) di dalam field yang relevan (asesmenFormatif / asesmenSumatif / rubrikData / pertemuan inti) menggunakan format tabel pipa Markdown, contoh:\n| Kolom 1 | Kolom 2 |\n| --- | --- |\n| isi | isi |" : "Tanpa tabel tambahan di luar rubrikData; cukup gunakan paragraf & daftar bernomor.",
+  ].join("\n- ");
+  return `Anda adalah ahli kurikulum Merdeka Belajar yang menerapkan PENDEKATAN PEMBELAJARAN MENDALAM (Deep Learning) untuk sekolah ${jenjang} di Indonesia. Susun MODUL AJAR yang LENGKAP, KONTEKSTUAL, dan SIAP PAKAI dalam Bahasa Indonesia formal. Semua isi HARUS relevan dan konsisten dengan Materi Pokok dan Tujuan Pembelajaran; bukan sekadar template kosong.
+
+OPSI TAMBAHAN KONTEN (WAJIB dipatuhi):
+- ${opsiTambahan}
 
 PENDEKATAN PEMBELAJARAN MENDALAM (WAJIB dijadikan ruh seluruh modul):
 - 3 PRINSIP: (a) BERKESADARAN — siswa sadar tujuan, proses, dan makna belajar (metakognisi); (b) BERMAKNA — belajar terhubung dengan kehidupan nyata, pengalaman, dan nilai siswa; (c) MENGGEMBIRAKAN — suasana aman, kolaboratif, dan memicu rasa ingin tahu. Sisipkan indikator ketiga prinsip ini pada asesmen awal, dimensi profil lulusan, kegiatan inti tiap pertemuan, refleksi guru, dan refleksi siswa.
@@ -60,7 +69,7 @@ ATURAN UMUM:
 - Semua field wajib terisi. Tidak boleh string kosong, "-", "…", atau "akan ditentukan".
 - Konsistenkan seluruh isi dengan Materi "${form.materi}"; jangan menyimpang ke topik lain.
 - Gunakan format paragraf padat; jika berupa daftar gunakan penanda "1) 2) 3)" di dalam string.
-- Tulis dalam Bahasa Indonesia baku sesuai jenjang ${form.tingkatSekolah} ${form.kelas}.
+- Tulis dalam Bahasa Indonesia baku sesuai jenjang ${jenjang} ${form.kelas}.
 - Kembalikan hanya satu objek JSON yang valid sesuai nama field yang diminta, tanpa markdown dan tanpa penjelasan tambahan.`;
 }
 
@@ -137,6 +146,9 @@ function createFallbackHasil(form: ModulFormInput): ModulHasil {
     kemitraanPembelajaran: `Opsional: orang tua/wali dilibatkan sebagai pendamping belajar di rumah; guru sejawat sebagai mitra kolaborasi; serta narasumber lokal (bila relevan dengan ${form.materi}) untuk memperkaya pengalaman belajar peserta didik.`,
     pemanfaatanDigital: `Pembelajaran memanfaatkan alat digital sesuai ketersediaan, antara lain: laptop/komputer guru, proyektor/LCD, papan tulis interaktif (bila tersedia), tayangan video pembelajaran, audio penjelasan, serta gambar/animasi pendukung materi ${form.materi}. Alat digital digunakan untuk memperjelas konsep, memantik diskusi, dan memperluas sumber belajar.`,
     pertanyaanPemantik: `1) Kapan kamu pernah menemukan contoh ${form.materi} dalam kehidupan sehari-hari? 2) Mengapa memahami ${form.materi} penting untuk menyelesaikan masalah? 3) Strategi apa yang dapat digunakan agar tidak keliru saat mempelajari ${form.materi}?`,
+    saranMedia: form.tambahGambar
+      ? `1) Gambar/foto kontekstual tentang ${form.materi} untuk membangun apersepsi. 2) Video pendek (3–5 menit) yang menjelaskan konsep utama ${form.materi}. 3) Ilustrasi/diagram sederhana untuk memperjelas hubungan antar-konsep. 4) Audio narasi atau lagu sederhana (bila relevan) untuk memperkuat ingatan.`
+      : "",
     pertemuanData,
     asesmenFormatif: `Asesmen formatif dilakukan melalui observasi diskusi, pemeriksaan LKPD, dan exit ticket tentang ${form.materi}. Indikator yang diamati meliputi ketepatan konsep, kejelasan alasan, keaktifan bertanya/menjawab, dan kemampuan memperbaiki kesalahan setelah mendapat umpan balik.`,
     asesmenSumatif: `Asesmen sumatif berupa tes tertulis atau produk sederhana yang mengukur pemahaman ${form.materi}. Penskoran memperhatikan ketepatan konsep, kelengkapan langkah, kejelasan penjelasan, dan kemampuan menerapkan konsep pada konteks baru.`,
@@ -175,7 +187,9 @@ function normalizeHasil(partial: unknown, form: ModulFormInput): ModulHasil {
   });
 
   const rawLkpd = asArray(source.lkpdData);
-  const lkpdData = Array.from({ length: form.jumlahPertemuan }, (_, i) => {
+  const lkpdData = form.tambahLK === false
+    ? []
+    : Array.from({ length: form.jumlahPertemuan }, (_, i) => {
     const row = asRecord(rawLkpd[i]);
     const base = fallback.lkpdData[i];
     return {
@@ -224,6 +238,9 @@ function normalizeHasil(partial: unknown, form: ModulFormInput): ModulHasil {
     kemitraanPembelajaran: pickText(fallback.kemitraanPembelajaran, source.kemitraanPembelajaran, source.kemitraan),
     pemanfaatanDigital: pickText(fallback.pemanfaatanDigital, source.pemanfaatanDigital, source.digital, source.alatDigital),
     pertanyaanPemantik: pickText(fallback.pertanyaanPemantik, source.pertanyaanPemantik),
+    saranMedia: form.tambahGambar
+      ? pickText(fallback.saranMedia, source.saranMedia, source.mediaSaran, source.media)
+      : "",
     pertemuanData,
     asesmenFormatif: pickText(fallback.asesmenFormatif, source.asesmenFormatif),
     asesmenSumatif: pickText(fallback.asesmenSumatif, source.asesmenSumatif),
