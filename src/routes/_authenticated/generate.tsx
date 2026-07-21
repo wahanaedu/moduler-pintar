@@ -45,8 +45,6 @@ function GeneratePage() {
     nip: "",
     sekolah: "",
     kabupaten: "",
-    provinsi: "",
-    tingkatSekolah: "SD" as "SD" | "SMP",
     jabatan: "guru_kelas" as "guru_kelas" | "guru_mapel",
     kepalaSekolah: "",
     nipKepalaSekolah: "",
@@ -59,6 +57,9 @@ function GeneratePage() {
     alokasiWaktu: "2 x 35 menit",
     modelPembelajaran: "Problem Based Learning (PBL)",
     profilLulusan: ["Penalaran Kritis", "Kreativitas"] as string[],
+    tambahGambar: false,
+    tambahLK: true,
+    tambahTabel: false,
   });
 
   // Sinkronkan kelas dari kunci profil.
@@ -85,7 +86,11 @@ function GeneratePage() {
   }
 
   const mutation = useMutation({
-    mutationFn: async () => gen({ data: form }),
+    mutationFn: async () => {
+      const kelasNum = parseInt(form.kelas.replace(/\D/g, ""), 10);
+      const tingkatSekolah: "SD" | "SMP" = kelasNum <= 6 ? "SD" : "SMP";
+      return gen({ data: { ...form, tingkatSekolah, provinsi: "" } });
+    },
     onSuccess: (res) => {
       toast.success("Modul berhasil dibuat!");
       navigate({ to: "/modul/$id", params: { id: res.id } });
@@ -133,17 +138,8 @@ function GeneratePage() {
             <Field label="Nama Sekolah" required>
               <Input value={form.sekolah} onChange={(e) => upd("sekolah", e.target.value)} placeholder="Cth. SD Negeri 1 Merdeka" required />
             </Field>
-            <Field label="Tingkat">
-              <RadioGroup value={form.tingkatSekolah} onValueChange={(v) => upd("tingkatSekolah", v as "SD" | "SMP")} className="flex gap-4 h-10 items-center">
-                <div className="flex items-center gap-2"><RadioGroupItem value="SD" id="sd" /><Label htmlFor="sd">SD</Label></div>
-                <div className="flex items-center gap-2"><RadioGroupItem value="SMP" id="smp" /><Label htmlFor="smp">SMP</Label></div>
-              </RadioGroup>
-            </Field>
             <Field label="Kabupaten/Kota" required>
               <Input value={form.kabupaten} onChange={(e) => upd("kabupaten", e.target.value)} placeholder="Cth. Kabupaten Sleman" required />
-            </Field>
-            <Field label="Provinsi" required>
-              <Input value={form.provinsi} onChange={(e) => upd("provinsi", e.target.value)} placeholder="Cth. DI Yogyakarta" required />
             </Field>
             <Field label="Kepala Sekolah (opsional)">
               <Input value={form.kepalaSekolah} onChange={(e) => upd("kepalaSekolah", e.target.value)} />
@@ -233,6 +229,28 @@ function GeneratePage() {
                 <label key={p} className={`flex items-center gap-2 p-3 rounded-md border cursor-pointer hover:bg-accent ${checked ? "border-primary bg-primary/5" : ""}`}>
                   <Checkbox checked={checked} onCheckedChange={() => toggleProfil(p)} />
                   <span className="text-sm">{p}</span>
+                </label>
+              );
+            })}
+          </div>
+        </Section>
+
+        <Section title="Konten Tambahan (opsional)">
+          <p className="text-sm text-muted-foreground -mt-2">Centang bagian yang ingin AI sertakan dalam modul.</p>
+          <div className="grid md:grid-cols-3 gap-3">
+            {[
+              { key: "tambahGambar" as const, label: "Tambahkan gambar/media", desc: "Saran gambar, video, audio pendukung." },
+              { key: "tambahLK" as const, label: "Tambahkan LK (LKPD)", desc: "Lembar Kerja Peserta Didik per pertemuan." },
+              { key: "tambahTabel" as const, label: "Tambahkan tabel yang diperlukan", desc: "Tabel diferensiasi, skoring, dsb." },
+            ].map((opt) => {
+              const checked = form[opt.key];
+              return (
+                <label key={opt.key} className={`flex items-start gap-2 p-3 rounded-md border cursor-pointer hover:bg-accent ${checked ? "border-primary bg-primary/5" : ""}`}>
+                  <Checkbox checked={checked} onCheckedChange={(v) => upd(opt.key, v === true)} className="mt-0.5" />
+                  <span className="text-sm">
+                    <span className="font-medium block">{opt.label}</span>
+                    <span className="text-xs text-muted-foreground">{opt.desc}</span>
+                  </span>
                 </label>
               );
             })}
