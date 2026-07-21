@@ -5,7 +5,7 @@ import {
 } from "docx";
 import { parseRichText, countOrderedItems } from "./rich-text";
 import type { ModulHasil, ModulForm } from "./modul-schema";
-import { formatKopDinas } from "./modul-constants";
+import { formatKopDinas, formatPemerintahHeader } from "./modul-constants";
 
 function richParagraphs(text: string | undefined | null, startNumber = 1): Paragraph[] {
   const blocks = parseRichText(text);
@@ -104,9 +104,10 @@ function rubrikTable(rubrik: ModulHasil["rubrikData"]): Table {
 export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
   const children: (Paragraph | Table)[] = [];
 
-  children.push(centered(`PEMERINTAH ${(form.provinsi || "REPUBLIK INDONESIA").toUpperCase()}`, false, 20));
+  children.push(centered(formatPemerintahHeader(form.kabupaten), true, 20));
   children.push(centered(formatKopDinas(form.kabupaten), true, 22));
   children.push(centered(form.sekolah.toUpperCase(), true, 26));
+  if (form.alamatSekolah) children.push(centered(`Alamat: ${form.alamatSekolah}`, false, 18));
   children.push(new Paragraph({ children: [new TextRun("")], border: { bottom: { style: BorderStyle.DOUBLE, size: 8, color: "000000", space: 4 } } }));
 
   children.push(new Paragraph({ spacing: { before: 200 }, alignment: AlignmentType.CENTER, children: [new TextRun({ text: "MODUL AJAR / RENCANA PEMBELAJARAN", bold: true, size: 28 })] }));
@@ -174,10 +175,14 @@ export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
   children.push(new Paragraph({ pageBreakBefore: true, heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: "LAMPIRAN 1 — Lembar Kerja Peserta Didik (LKPD)", bold: true })] }));
   for (const l of hasil.lkpdData) {
     children.push(new Paragraph({ children: [new TextRun({ text: `LKPD Pertemuan ${l.pertemuan}: ${l.judul}`, bold: true })], spacing: { before: 160, after: 80 } }));
+    children.push(new Paragraph({ children: [new TextRun({ text: "Identitas Peserta Didik:", bold: true })], spacing: { before: 60, after: 60 } }));
+    children.push(identitasTable());
     children.push(new Paragraph({ children: [new TextRun({ text: "Petunjuk:", bold: true })] }));
     children.push(...richParagraphs(l.petunjuk));
-    children.push(new Paragraph({ children: [new TextRun({ text: "Aktivitas:", bold: true })], spacing: { before: 80 } }));
+    children.push(new Paragraph({ children: [new TextRun({ text: "Aktivitas / Soal:", bold: true })], spacing: { before: 80 } }));
     children.push(...richParagraphs(l.aktivitas));
+    children.push(new Paragraph({ children: [new TextRun({ text: "Lembar Jawaban Tambahan:", bold: true })], spacing: { before: 120, after: 60 } }));
+    for (let i = 0; i < 5; i++) children.push(blankLine());
   }
 
   children.push(new Paragraph({ pageBreakBefore: true, heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: "LAMPIRAN 2 — Kuis Sumatif", bold: true })] }));
