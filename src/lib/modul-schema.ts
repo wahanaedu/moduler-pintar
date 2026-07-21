@@ -5,6 +5,7 @@ export const ModulFormSchema = z.object({
   namaGuru: z.string().trim().min(1, "Nama guru wajib diisi"),
   nip: z.string().trim().optional().default(""),
   sekolah: z.string().trim().min(1, "Nama sekolah wajib diisi"),
+  alamatSekolah: z.string().trim().optional().default(""),
   kabupaten: z.string().trim().min(1, "Kabupaten/Kota wajib diisi"),
   provinsi: z.string().trim().optional().default(""),
   tingkatSekolah: z.enum(["SD", "SMP"]).optional().default("SD"),
