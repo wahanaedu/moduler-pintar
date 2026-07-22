@@ -8,7 +8,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "ModulAjar — Generator Modul Ajar Kurikulum Merdeka" },
-      { name: "description", content: "Buat Modul Ajar & RPP Kurikulum Merdeka lengkap dengan LKPD, kuis, dan rubrik penilaian secara otomatis dalam hitungan menit." },
+      { name: "description", content: "Buat Modul Ajar & RPP Pembelajaran Mendalam lengkap dengan LKPD, kuis, dan rubrik penilaian secara otomatis dalam hitungan menit." },
     ],
   }),
 });
