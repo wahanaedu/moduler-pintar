@@ -38,6 +38,8 @@ export const PertemuanSchema = z.object({
   pembuka: z.string(),
   inti: z.string(),
   penutup: z.string(),
+  gambarUrl: z.string().optional().default(""),
+  gambarPrompt: z.string().optional().default(""),
 });
 
 export const LkpdSchema = z.object({
@@ -45,6 +47,8 @@ export const LkpdSchema = z.object({
   judul: z.string(),
   petunjuk: z.string(),
   aktivitas: z.string(),
+  gambarUrl: z.string().optional().default(""),
+  gambarPrompt: z.string().optional().default(""),
 });
 
 export const KuisSchema = z.object({

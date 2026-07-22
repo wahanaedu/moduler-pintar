@@ -1,7 +1,7 @@
 import {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
   Table, TableRow, TableCell, WidthType, BorderStyle, LevelFormat,
-  PageOrientation, ShadingType,
+  PageOrientation, ShadingType, ImageRun,
 } from "docx";
 import { parseRichText, countOrderedItems } from "./rich-text";
 import type { ModulHasil, ModulForm } from "./modul-schema";
@@ -138,6 +138,32 @@ function blankLine(): Paragraph {
   });
 }
 
+async function fetchImageBytes(url: string): Promise<Uint8Array | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    return new Uint8Array(buf);
+  } catch {
+    return null;
+  }
+}
+
+function imageParagraph(bytes: Uint8Array, caption: string): Paragraph[] {
+  return [
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 120, after: 40 },
+      children: [new ImageRun({ data: bytes, transformation: { width: 380, height: 240 }, type: "png" })],
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 120 },
+      children: [new TextRun({ text: caption, italics: true, size: 18 })],
+    }),
+  ];
+}
+
 export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
   const children: (Paragraph | Table)[] = [];
 
@@ -178,6 +204,10 @@ export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
       children.push(new Paragraph({ children: [new TextRun({ text: `${k}:`, bold: true })], spacing: { before: 100 } }));
       children.push(...richParagraphs(v, n));
       n += countOrderedItems(v);
+      if (k === "Kegiatan Inti" && p.gambarUrl) {
+        const bytes = await fetchImageBytes(p.gambarUrl);
+        if (bytes) children.push(...imageParagraph(bytes, `Ilustrasi kegiatan pertemuan ${p.pertemuan}`));
+      }
     }
   }
 
@@ -212,6 +242,10 @@ export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
     children.push(identitasTable());
     children.push(new Paragraph({ children: [new TextRun({ text: "Petunjuk:", bold: true })] }));
     children.push(...richParagraphs(l.petunjuk));
+    if (l.gambarUrl) {
+      const bytes = await fetchImageBytes(l.gambarUrl);
+      if (bytes) children.push(...imageParagraph(bytes, `Ilustrasi pendukung LKPD`));
+    }
     children.push(new Paragraph({ children: [new TextRun({ text: "Aktivitas / Soal:", bold: true })], spacing: { before: 80 } }));
     children.push(...richParagraphs(l.aktivitas));
     children.push(new Paragraph({ children: [new TextRun({ text: "Lembar Jawaban Tambahan:", bold: true })], spacing: { before: 120, after: 60 } }));
