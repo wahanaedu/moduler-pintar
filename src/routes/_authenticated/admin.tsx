@@ -68,7 +68,7 @@ function AdminPage() {
         <p className="text-muted-foreground mt-1">Kelola persetujuan pendaftar dan lihat seluruh pengguna terdaftar.</p>
       </div>
 
-      <AddUserForm onSubmit={(v) => createMut.mutate(v)} pending={createMut.isPending} />
+      <AddUserForm onSubmit={(v: { fullName: string; email: string; password: string }) => createMut.mutate(v)} pending={createMut.isPending} />
 
       {isLoading ? (
         <div className="flex items-center justify-center py-24 text-muted-foreground">
