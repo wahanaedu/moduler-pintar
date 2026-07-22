@@ -147,8 +147,8 @@ export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
   if (form.alamatSekolah) children.push(centered(`Alamat: ${form.alamatSekolah}`, false, 18));
   children.push(new Paragraph({ children: [new TextRun("")], border: { bottom: { style: BorderStyle.DOUBLE, size: 8, color: "000000", space: 4 } } }));
 
-  children.push(new Paragraph({ spacing: { before: 200 }, alignment: AlignmentType.CENTER, children: [new TextRun({ text: "MODUL AJAR / RENCANA PEMBELAJARAN", bold: true, size: 28 })] }));
-  children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 200 }, children: [new TextRun({ text: hasil.judulModul, bold: true, size: 24 })] }));
+  children.push(new Paragraph({ spacing: { before: 200 }, alignment: AlignmentType.CENTER, children: [new TextRun({ text: "MODUL AJAR PEMBELAJARAN MENDALAM", bold: true, size: 28 })] }));
+  children.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 200 }, children: [new TextRun({ text: `"${hasil.judulModul}"`, bold: true, italics: true, size: 24 })] }));
 
   children.push(metaTable(form));
 
@@ -165,13 +165,12 @@ export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
   ];
   if (hasMitra) preBlocks.push([`${L()}. Kemitraan Pembelajaran (Opsional)`, hasil.kemitraanPembelajaran]);
   preBlocks.push([`${L()}. Pemanfaatan Digital`, hasil.pemanfaatanDigital]);
-  preBlocks.push([`${L()}. Pertanyaan Pemantik`, hasil.pertanyaanPemantik]);
   for (const [t, b] of preBlocks) {
     children.push(heading(t));
     children.push(...richParagraphs(b));
   }
 
-  children.push(heading(`${L()}. Kegiatan Pembelajaran`));
+  children.push(heading(`${L()}. Langkah Pembelajaran`));
   for (const p of hasil.pertemuanData) {
     children.push(new Paragraph({ children: [new TextRun({ text: `Pertemuan ${p.pertemuan} — ${p.topik}`, bold: true })], spacing: { before: 160, after: 80 } }));
     let n = 1;
@@ -182,16 +181,13 @@ export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
     }
   }
 
-  const blocks2: [string, string][] = [
-    [`${L()}. Asesmen Formatif`, hasil.asesmenFormatif],
-    [`${L()}. Asesmen Sumatif`, hasil.asesmenSumatif],
-    [`${L()}. Refleksi Guru`, hasil.refleksiGuru],
-    [`${L()}. Refleksi Siswa`, hasil.refleksiSiswa],
-  ];
-  for (const [t, b] of blocks2) {
-    children.push(heading(t));
-    children.push(...richParagraphs(b));
-  }
+  children.push(heading(`${L()}. Asesmen Pembelajaran`));
+  children.push(new Paragraph({ children: [new TextRun({ text: "Asesmen Awal", bold: true })], spacing: { before: 80, after: 40 } }));
+  children.push(new Paragraph({ children: [new TextRun({ text: "Lihat bagian A. Asesmen Awal di atas — dipakai untuk pemetaan pengetahuan awal peserta didik.", italics: true })] }));
+  children.push(new Paragraph({ children: [new TextRun({ text: "Asesmen Formatif (pada proses pembelajaran)", bold: true })], spacing: { before: 100, after: 40 } }));
+  children.push(...richParagraphs(hasil.asesmenFormatif));
+  children.push(new Paragraph({ children: [new TextRun({ text: "Asesmen Sumatif (pada akhir pembelajaran)", bold: true })], spacing: { before: 100, after: 40 } }));
+  children.push(...richParagraphs(hasil.asesmenSumatif));
 
   // Tanda tangan sebelum lampiran
   const tgl = new Date(form.tanggalPembuatan).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
@@ -233,6 +229,17 @@ export async function exportModulDocx(hasil: ModulHasil, form: ModulForm) {
 
   children.push(new Paragraph({ pageBreakBefore: true, heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: "LAMPIRAN 3 — Rubrik Penilaian", bold: true })], spacing: { after: 120 } }));
   children.push(rubrikTable(hasil.rubrikData));
+
+  children.push(new Paragraph({ pageBreakBefore: true, heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: "LAMPIRAN 4 — Lembar Refleksi Pembelajaran", bold: true })], spacing: { after: 120 } }));
+  children.push(identitasTable());
+  for (const label of ["Tujuan Pembelajaran", "Bagian pembelajaran yang telah berjalan baik", "Bagian pembelajaran yang perlu diperbaiki", "Partisipasi Siswa", "Perbaikan untuk pertemuan berikutnya"]) {
+    children.push(new Paragraph({ children: [new TextRun({ text: label, bold: true })], spacing: { before: 120, after: 40 } }));
+    for (let i = 0; i < 3; i++) children.push(blankLine());
+  }
+  children.push(new Paragraph({ children: [new TextRun({ text: "Pertanyaan Panduan Refleksi Guru:", bold: true })], spacing: { before: 160, after: 40 } }));
+  children.push(...richParagraphs(hasil.refleksiGuru));
+  children.push(new Paragraph({ children: [new TextRun({ text: "Pertanyaan Panduan Refleksi Siswa:", bold: true })], spacing: { before: 100, after: 40 } }));
+  children.push(...richParagraphs(hasil.refleksiSiswa));
 
   const doc = new Document({
     creator: "ModulAjar",
