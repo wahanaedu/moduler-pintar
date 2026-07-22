@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, LogOut, Plus, LayoutDashboard, ShieldCheck, Clock, Lock } from "lucide-react";
+import { FileText, LogOut, Plus, LayoutDashboard, ShieldCheck, Clock, Lock, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { getMyApprovalStatus } from "@/lib/admin.functions";
 import { getKelasLock, setKelasLock } from "@/lib/modul.functions";
@@ -65,6 +65,7 @@ function Layout() {
             {status?.isAdmin && (
               <Link to="/admin"><Button variant="ghost" size="sm"><ShieldCheck className="h-4 w-4 mr-1.5" />Admin</Button></Link>
             )}
+            <Link to="/settings"><Button variant="ghost" size="sm"><Settings className="h-4 w-4 mr-1.5" /><span className="hidden md:inline">Akun</span></Button></Link>
             <Button variant="ghost" size="sm" onClick={signOut}><LogOut className="h-4 w-4" /></Button>
           </nav>
         </div>

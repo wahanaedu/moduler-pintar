@@ -1,11 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { listAllUsers, setUserApproval } from "@/lib/admin.functions";
+import { useState } from "react";
+import { listAllUsers, setUserApproval, adminCreateUser } from "@/lib/admin.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ShieldCheck, ShieldOff, CheckCircle2, XCircle, Users } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, ShieldCheck, ShieldOff, CheckCircle2, Users, UserPlus, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -17,6 +20,7 @@ function AdminPage() {
   const qc = useQueryClient();
   const fetchUsers = useServerFn(listAllUsers);
   const approveFn = useServerFn(setUserApproval);
+  const createFn = useServerFn(adminCreateUser);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-users"],
@@ -27,6 +31,16 @@ function AdminPage() {
     mutationFn: (v: { userId: string; approved: boolean }) => approveFn({ data: v }),
     onSuccess: (_r, v) => {
       toast.success(v.approved ? "Pengguna disetujui" : "Persetujuan dibatalkan");
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const createMut = useMutation({
+    mutationFn: (v: { fullName: string; email: string; password: string }) =>
+      createFn({ data: { ...v, approved: true } }),
+    onSuccess: () => {
+      toast.success("Pengguna berhasil ditambahkan");
       qc.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -53,6 +67,8 @@ function AdminPage() {
         </h1>
         <p className="text-muted-foreground mt-1">Kelola persetujuan pendaftar dan lihat seluruh pengguna terdaftar.</p>
       </div>
+
+      <AddUserForm onSubmit={(v: { fullName: string; email: string; password: string }) => createMut.mutate(v)} pending={createMut.isPending} />
 
       {isLoading ? (
         <div className="flex items-center justify-center py-24 text-muted-foreground">
@@ -152,6 +168,61 @@ function UserRow({ user, onToggle, pending }: { user: UserRowData; onToggle: (ap
             </Button>
           )}
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+function AddUserForm({ onSubmit, pending }: { onSubmit: (v: { fullName: string; email: string; password: string }) => void; pending: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    onSubmit({ fullName, email, password });
+    setFullName(""); setEmail(""); setPassword("");
+  }
+
+  if (!open) {
+    return (
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        <UserPlus className="h-4 w-4 mr-2" />Tambah Pengguna Baru
+      </Button>
+    );
+  }
+  return (
+    <Card className="border-primary/40">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-serif text-lg font-semibold flex items-center gap-2"><UserPlus className="h-5 w-5 text-primary" />Tambah Pengguna</h2>
+          <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Batal</Button>
+        </div>
+        <form onSubmit={submit} className="grid md:grid-cols-3 gap-3 items-end">
+          <div className="space-y-1.5">
+            <Label htmlFor="nu-name">Nama Lengkap</Label>
+            <Input id="nu-name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="nu-email">Email</Label>
+            <Input id="nu-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="nu-pw">Kata Sandi</Label>
+            <div className="relative">
+              <Input id="nu-pw" type={show ? "text" : "password"} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="pr-10" />
+              <button type="button" onClick={() => setShow((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground" aria-label={show ? "Sembunyikan" : "Tampilkan"}>
+                {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="md:col-span-3">
+            <Button type="submit" disabled={pending}>
+              {pending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Buat Akun (Langsung Aktif)
+            </Button>
+          </div>
+        </form>
       </CardContent>
     </Card>
   );
