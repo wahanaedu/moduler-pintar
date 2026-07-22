@@ -31,13 +31,13 @@ function Landing() {
       <section className="bg-hero-gradient text-primary-foreground">
         <div className="mx-auto max-w-6xl px-6 py-24 md:py-32 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium mb-6">
-            <Sparkles className="h-3.5 w-3.5" /> Ditenagai Super AI
+            <Sparkles className="h-3.5 w-3.5" /> Ditenagai Generator Wahana Edukasi
           </div>
           <h1 className="font-serif text-4xl md:text-6xl font-bold leading-tight max-w-3xl mx-auto">
             Modul Ajar Kurikulum Merdeka, siap dalam 2 menit.
           </h1>
           <p className="mt-6 text-lg md:text-xl text-white/85 max-w-2xl mx-auto">
-            Buat Rencana Pembelajaran lengkap — kop dinas, tujuan, kegiatan per pertemuan, LKPD, kuis, hingga rubrik penilaian — otomatis dengan AI.
+            Buat Rencana Pembelajaran lengkap — kop dinas, tujuan, kegiatan per pertemuan, LKPD, kuis, hingga rubrik penilaian — Otomatis dengan generator Wahana Edukasi.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             <Link to="/auth" search={{ mode: "signup" as const }}>
@@ -56,7 +56,7 @@ function Landing() {
         <div className="grid md:grid-cols-3 gap-6">
           {[
             { icon: FileText, title: "Struktur Lengkap", desc: "Identitas, tujuan pembelajaran, pemahaman bermakna, kegiatan per pertemuan, asesmen, dan rubrik." },
-            { icon: Clock3, title: "Hemat Waktu", desc: "Dari 3 jam menjadi 2 menit. Fokus mengajar, bukan mengetik." },
+            { icon: Clock3, title: "Hemat Waktu", desc: "Dari berjam-jam menjadi hitungan menit. Fokus mengajar, bukan mengetik." },
             { icon: ShieldCheck, title: "Sesuai Kurikulum Merdeka", desc: "Mengikuti Fase A–F, Profil Lulusan, dan sintaks model pembelajaran yang benar." },
           ].map((f) => (
             <Card key={f.title} className="border-2">
