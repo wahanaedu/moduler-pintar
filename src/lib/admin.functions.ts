@@ -79,3 +79,63 @@ export const setUserApproval = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const changeMyPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        newPassword: z
+          .string()
+          .min(6, "Kata sandi minimal 6 karakter")
+          .regex(/[A-Z]/, "Harus mengandung huruf kapital")
+          .regex(/[0-9]/, "Harus mengandung angka")
+          .regex(/[^A-Za-z0-9]/, "Harus mengandung karakter khusus"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(context.userId, {
+      password: data.newPassword,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminCreateUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        fullName: z.string().trim().min(2, "Nama minimal 2 karakter").max(120),
+        email: z.string().trim().email("Email tidak valid").max(255),
+        password: z.string().min(6, "Kata sandi minimal 6 karakter").max(128),
+        approved: z.boolean().default(true),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const adminFlag = await checkIsAdmin(context.userId);
+    if (!adminFlag) throw new Error("Forbidden: admin only");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { full_name: data.fullName },
+    });
+    if (error) throw new Error(error.message);
+    const newId = created.user?.id;
+    if (!newId) throw new Error("Gagal membuat akun");
+    // Trigger handle_new_user creates the profile+role. Update approved & name.
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        approved: data.approved,
+        full_name: data.fullName,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", newId);
+    return { ok: true, userId: newId };
+  });
