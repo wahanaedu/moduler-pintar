@@ -318,7 +318,8 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
   text(formatKopDinas(form.kabupaten), { center: true, bold: true, size: 11 });
   text(form.sekolah.toUpperCase(), { center: true, bold: true, size: 13 });
   if (form.alamatSekolah) text(`Alamat: ${form.alamatSekolah}`, { center: true, size: 9 });
-  doc.setLineWidth(0.6); doc.line(margin, y, 210 - margin, y); line(2);
+  line(3);
+  doc.setLineWidth(0.6); doc.line(margin, y, 210 - margin, y); line(8);
   text("MODUL AJAR PEMBELAJARAN MENDALAM", { center: true, bold: true, size: 14 });
   text(`"${hasil.judulModul}"`, { center: true, bold: true, size: 12 });
   line(2);

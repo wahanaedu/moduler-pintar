@@ -243,7 +243,7 @@ function GeneratePage() {
           <div className="grid md:grid-cols-3 gap-3">
             {[
               { key: "tambahGambar" as const, label: "Tambahkan gambar/media", desc: "Saran gambar, video, audio pendukung." },
-              { key: "tambahLK" as const, label: "Tambahkan LK (LKPD)", desc: "Lembar Kerja Peserta Didik per pertemuan." },
+              { key: "tambahLK" as const, label: "Tambahkan LKPD", desc: "Lembar Kerja Peserta Didik per pertemuan." },
               { key: "tambahTabel" as const, label: "Tambahkan tabel yang diperlukan", desc: "Tabel diferensiasi, skoring, dsb." },
             ].map((opt) => {
               const checked = form[opt.key];
