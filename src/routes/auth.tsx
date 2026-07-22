@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { FileText, Loader2, Eye, EyeOff } from "lucide-react";
+import { CheckCircle2, ExternalLink } from "lucide-react";
 
 const search = z.object({ mode: z.enum(["signin", "signup"]).optional() });
 
@@ -26,6 +27,7 @@ function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [registered, setRegistered] = useState<null | { email: string; fullName: string }>(null);
 
   const passwordRules = {
     length: password.length >= 6,
@@ -63,7 +65,7 @@ function AuthPage() {
         // Sign the user out immediately — akun akan aktif setelah pembayaran & persetujuan admin.
         await supabase.auth.signOut();
         toast.success("Akun terdaftar. Silakan selesaikan pembayaran untuk aktivasi.");
-        window.location.href = "https://lynk.id/alunagra/lq48r3m5rlw9";
+        setRegistered({ email, fullName });
         return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -88,6 +90,51 @@ function AuthPage() {
         </div>
       </header>
       <main className="flex-1 flex items-center justify-center px-4 py-12">
+        {registered ? (
+          <Card className="w-full max-w-md border-2 border-primary/30">
+            <CardContent className="p-8 space-y-5">
+              <div className="h-14 w-14 mx-auto rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <CheckCircle2 className="h-7 w-7" />
+              </div>
+              <div className="text-center space-y-1">
+                <h1 className="font-serif text-2xl font-bold">Pendaftaran Berhasil</h1>
+                <p className="text-sm text-muted-foreground">
+                  Halo <span className="font-medium">{registered.fullName || registered.email}</span>, akun Anda sudah terdaftar.
+                </p>
+              </div>
+              <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 p-4 text-sm space-y-2">
+                <p className="font-medium text-amber-900 dark:text-amber-200">Langkah aktivasi akun:</p>
+                <ol className="list-decimal ml-5 space-y-1 text-amber-900/90 dark:text-amber-100/90">
+                  <li>Klik tombol <strong>Selesaikan Pembayaran</strong> di bawah.</li>
+                  <li>Selesaikan transaksi pada halaman pembayaran yang terbuka di tab baru.</li>
+                  <li>Tim admin akan memverifikasi &amp; mengaktifkan akun Anda setelah pembayaran diterima (biasanya kurang dari 1×24 jam).</li>
+                  <li>Setelah aktif, silakan masuk kembali menggunakan email &amp; kata sandi ini.</li>
+                </ol>
+              </div>
+              <Button
+                asChild
+                className="w-full"
+                size="lg"
+              >
+                <a
+                  href="https://lynk.id/alunagra/lq48r3m5rlw9"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Selesaikan Pembayaran
+                </a>
+              </Button>
+              <button
+                type="button"
+                onClick={() => { setRegistered(null); setIsSignup(false); setPassword(""); }}
+                className="w-full text-sm text-muted-foreground hover:text-foreground"
+              >
+                Sudah bayar? Masuk ke akun
+              </button>
+            </CardContent>
+          </Card>
+        ) : (
         <Card className="w-full max-w-md border-2">
           <CardContent className="p-8">
             <h1 className="font-serif text-2xl font-bold mb-1">
@@ -151,6 +198,7 @@ function AuthPage() {
             </button>
           </CardContent>
         </Card>
+        )}
       </main>
     </div>
   );
