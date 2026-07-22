@@ -1,11 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { listAllUsers, setUserApproval } from "@/lib/admin.functions";
+import { useState } from "react";
+import { listAllUsers, setUserApproval, adminCreateUser } from "@/lib/admin.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ShieldCheck, ShieldOff, CheckCircle2, XCircle, Users } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, ShieldCheck, ShieldOff, CheckCircle2, Users, UserPlus, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -17,6 +20,7 @@ function AdminPage() {
   const qc = useQueryClient();
   const fetchUsers = useServerFn(listAllUsers);
   const approveFn = useServerFn(setUserApproval);
+  const createFn = useServerFn(adminCreateUser);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-users"],
@@ -27,6 +31,16 @@ function AdminPage() {
     mutationFn: (v: { userId: string; approved: boolean }) => approveFn({ data: v }),
     onSuccess: (_r, v) => {
       toast.success(v.approved ? "Pengguna disetujui" : "Persetujuan dibatalkan");
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const createMut = useMutation({
+    mutationFn: (v: { fullName: string; email: string; password: string }) =>
+      createFn({ data: { ...v, approved: true } }),
+    onSuccess: () => {
+      toast.success("Pengguna berhasil ditambahkan");
       qc.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -53,6 +67,8 @@ function AdminPage() {
         </h1>
         <p className="text-muted-foreground mt-1">Kelola persetujuan pendaftar dan lihat seluruh pengguna terdaftar.</p>
       </div>
+
+      <AddUserForm onSubmit={(v) => createMut.mutate(v)} pending={createMut.isPending} />
 
       {isLoading ? (
         <div className="flex items-center justify-center py-24 text-muted-foreground">
