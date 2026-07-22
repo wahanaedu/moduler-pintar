@@ -23,7 +23,7 @@ function Landing() {
           </Link>
           <div className="flex items-center gap-2">
             <Link to="/auth"><Button variant="ghost">Masuk</Button></Link>
-            <Link to="/auth" search={{ mode: "signup" as const }}><Button>Daftar Gratis</Button></Link>
+            <Link to="/auth" search={{ mode: "signup" as const }}><Button>Daftar Sekarang</Button></Link>
           </div>
         </div>
       </header>
@@ -31,7 +31,7 @@ function Landing() {
       <section className="bg-hero-gradient text-primary-foreground">
         <div className="mx-auto max-w-6xl px-6 py-24 md:py-32 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium mb-6">
-            <Sparkles className="h-3.5 w-3.5" /> Ditenagai Lovable AI · Gemini
+            <Sparkles className="h-3.5 w-3.5" /> Ditenagai Super AI
           </div>
           <h1 className="font-serif text-4xl md:text-6xl font-bold leading-tight max-w-3xl mx-auto">
             Modul Ajar Kurikulum Merdeka, siap dalam 2 menit.
@@ -41,7 +41,7 @@ function Landing() {
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             <Link to="/auth" search={{ mode: "signup" as const }}>
-              <Button size="lg" className="bg-[oklch(0.78_0.16_75)] text-primary hover:bg-[oklch(0.82_0.16_75)]">
+              <Button size="lg" className="bg-white text-primary hover:bg-white/90">
                 Mulai Buat Modul
               </Button>
             </Link>
