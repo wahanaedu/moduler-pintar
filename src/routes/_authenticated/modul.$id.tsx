@@ -125,6 +125,18 @@ function ModulPage() {
                 <RichText text={p.pembuka} startNumber={pembukaStart} />
                 <p><strong>Kegiatan Inti:</strong></p>
                 <RichText text={p.inti} startNumber={intiStart} />
+                {p.gambarUrl ? (
+                  <figure className="my-3 text-center">
+                    <img
+                      src={p.gambarUrl}
+                      alt={`Ilustrasi pertemuan ${p.pertemuan}: ${p.topik}`}
+                      style={{ maxWidth: "70%", margin: "0 auto", borderRadius: 8, border: "1px solid #e5e7eb" }}
+                    />
+                    <figcaption className="text-xs italic text-muted-foreground mt-1">
+                      Ilustrasi kegiatan pertemuan {p.pertemuan}
+                    </figcaption>
+                  </figure>
+                ) : null}
                 <p><strong>Kegiatan Penutup:</strong></p>
                 <RichText text={p.penutup} startNumber={penutupStart} />
               </div>
@@ -174,6 +186,18 @@ function ModulPage() {
                 </tbody>
               </table>
               <p><strong>Petunjuk:</strong></p><RichText text={l.petunjuk} />
+              {l.gambarUrl ? (
+                <figure className="my-3 text-center">
+                  <img
+                    src={l.gambarUrl}
+                    alt={`Ilustrasi LKPD ${l.judul}`}
+                    style={{ maxWidth: "60%", margin: "0 auto", borderRadius: 8, border: "1px solid #e5e7eb" }}
+                  />
+                  <figcaption className="text-xs italic text-muted-foreground mt-1">
+                    Ilustrasi pendukung LKPD
+                  </figcaption>
+                </figure>
+              ) : null}
               <p><strong>Aktivitas / Soal:</strong></p><RichText text={l.aktivitas} />
               <p className="mt-3"><strong>Lembar Jawaban Tambahan:</strong></p>
               {Array.from({ length: 5 }).map((_, i) => (
