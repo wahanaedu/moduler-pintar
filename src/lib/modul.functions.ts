@@ -393,6 +393,21 @@ ${JSON.stringify(hasil).slice(0, 6000)}`;
         }
       }
 
+      // Generate ilustrasi (opsional) untuk tiap pertemuan & LKPD.
+      if (data.tambahGambar) {
+        try {
+          hasil = await attachIlustrasi(hasil, data, {
+            supabase: context.supabase,
+            userId: context.userId,
+            modulId: draft.id,
+            apiKey,
+          });
+        } catch (imgErr) {
+          console.error("[generateModul] gambar gagal", imgErr);
+          // biarkan modul tetap tersimpan tanpa gambar
+        }
+      }
+
       await context.supabase
         .from("moduls")
         .update({
