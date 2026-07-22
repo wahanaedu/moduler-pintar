@@ -130,6 +130,8 @@ function createFallbackHasil(form: ModulFormInput): ModulHasil {
       pembuka: `1) Guru membuka pembelajaran dengan salam dan doa. 2) Guru mengaitkan pengalaman sehari-hari siswa dengan ${form.materi}. 3) Guru menyampaikan tujuan dan pertanyaan pemantik untuk pertemuan ${pertemuan}.`,
       inti: `1) Orientasi masalah: guru menyajikan contoh kasus tentang ${form.materi}. 2) Mengorganisasi belajar: siswa bekerja berpasangan/kelompok untuk mengidentifikasi informasi penting. 3) Membimbing penyelidikan: siswa mengerjakan latihan bertahap dan guru memberi umpan balik. 4) Mengembangkan hasil: siswa menyusun jawaban/produk sederhana. 5) Menganalisis proses: kelas membahas strategi yang tepat dan memperbaiki miskonsepsi.`,
       penutup: `1) Siswa dan guru menyimpulkan konsep penting ${form.materi}. 2) Siswa menulis refleksi singkat tentang hal yang sudah dipahami. 3) Guru memberi tindak lanjut berupa latihan rumah atau persiapan pertemuan berikutnya.`,
+      gambarUrl: "",
+      gambarPrompt: "",
     };
   });
 
@@ -138,6 +140,8 @@ function createFallbackHasil(form: ModulFormInput): ModulHasil {
     judul: `LKPD ${p.topik}`,
     petunjuk: `1) Tulis identitasmu pada kolom yang tersedia. 2) Bacalah setiap perintah dengan teliti. 3) Kerjakan tugas sesuai urutan. 4) Tuliskan jawaban pada garis/ruang kosong yang disediakan. 5) Diskusikan bagian yang sulit dengan teman kelompokmu.`,
     aktivitas: `1) Jelaskan dengan bahasamu sendiri apa yang kamu pahami tentang ${form.materi}.\nJawaban: ____________________________________________\n\n2) Berikan 2 contoh penerapan ${form.materi} yang kamu temui dalam kehidupan sehari-hari.\nJawaban: ____________________________________________\n\n3) Selesaikan latihan berikut berdasarkan konsep ${form.materi}, tuliskan langkahnya secara runtut.\nJawaban: ____________________________________________\n\n4) Refleksi: hal baru apa yang kamu pelajari hari ini dan bagian mana yang masih ingin kamu tanyakan?\nJawaban: ____________________________________________`,
+    gambarUrl: "",
+    gambarPrompt: "",
   }));
 
   return {
@@ -188,6 +192,8 @@ function normalizeHasil(partial: unknown, form: ModulFormInput): ModulHasil {
       pembuka: pickText(base.pembuka, row.pembuka, row.kegiatanPembuka),
       inti: pickText(base.inti, row.inti, row.kegiatanInti),
       penutup: pickText(base.penutup, row.penutup, row.kegiatanPenutup),
+      gambarUrl: pickText("", row.gambarUrl),
+      gambarPrompt: pickText("", row.gambarPrompt),
     };
   });
 
@@ -202,6 +208,8 @@ function normalizeHasil(partial: unknown, form: ModulFormInput): ModulHasil {
       judul: pickText(base.judul, row.judul, row.title),
       petunjuk: pickText(base.petunjuk, row.petunjuk, row.instruksi),
       aktivitas: pickText(base.aktivitas, row.aktivitas, row.tugas, row.pertanyaan),
+      gambarUrl: pickText("", row.gambarUrl),
+      gambarPrompt: pickText("", row.gambarPrompt),
     };
   });
 
