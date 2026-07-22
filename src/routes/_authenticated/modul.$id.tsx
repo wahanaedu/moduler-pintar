@@ -87,8 +87,8 @@ function ModulPage() {
             ) : null}
           </div>
 
-          <h1 className="text-center font-serif text-2xl font-bold mb-1">MODUL AJAR / RENCANA PEMBELAJARAN</h1>
-          <h2 className="text-center font-serif text-xl mb-6">{hasil.judulModul}</h2>
+          <h1 className="text-center font-serif text-2xl font-bold mb-1">MODUL AJAR PEMBELAJARAN MENDALAM</h1>
+          <h2 className="text-center font-serif text-xl mb-6 italic">&ldquo;{hasil.judulModul}&rdquo;</h2>
 
           <table>
             <tbody>
@@ -111,9 +111,8 @@ function ModulPage() {
             <Blok title="F. Kemitraan Pembelajaran (Opsional)" body={hasil.kemitraanPembelajaran} />
           ) : null}
           <Blok title={`${hasil.kemitraanPembelajaran?.trim() ? "G" : "F"}. Pemanfaatan Digital`} body={hasil.pemanfaatanDigital} />
-          <Blok title={`${hasil.kemitraanPembelajaran?.trim() ? "H" : "G"}. Pertanyaan Pemantik`} body={hasil.pertanyaanPemantik} />
 
-          <h2>{hasil.kemitraanPembelajaran?.trim() ? "I" : "H"}. Kegiatan Pembelajaran</h2>
+          <h2>{hasil.kemitraanPembelajaran?.trim() ? "H" : "G"}. Langkah Pembelajaran</h2>
           {hasil.pertemuanData.map((p) => {
             let n = 1;
             const pembukaStart = n; n += countOrderedItems(p.pembuka);
@@ -133,14 +132,17 @@ function ModulPage() {
           })}
 
           {(() => {
-            const base = hasil.kemitraanPembelajaran?.trim() ? 9 : 8; // I or H
-            const L = (offset: number) => String.fromCharCode(65 + base + offset); // next letters
+            const base = hasil.kemitraanPembelajaran?.trim() ? 8 : 7; // I or H
+            const L = String.fromCharCode(65 + base);
             return (
               <>
-                <Blok title={`${L(0)}. Asesmen Formatif`} body={hasil.asesmenFormatif} />
-                <Blok title={`${L(1)}. Asesmen Sumatif`} body={hasil.asesmenSumatif} />
-                <Blok title={`${L(2)}. Refleksi Guru`} body={hasil.refleksiGuru} />
-                <Blok title={`${L(3)}. Refleksi Siswa`} body={hasil.refleksiSiswa} />
+                <h2>{L}. Asesmen Pembelajaran</h2>
+                <h3>Asesmen Awal</h3>
+                <p className="italic text-sm">Lihat bagian A. Asesmen Awal di atas — dipakai untuk pemetaan pengetahuan awal peserta didik.</p>
+                <h3>Asesmen Formatif (pada proses pembelajaran)</h3>
+                <RichText text={hasil.asesmenFormatif} />
+                <h3>Asesmen Sumatif (pada akhir pembelajaran)</h3>
+                <RichText text={hasil.asesmenSumatif} />
               </>
             );
           })()}
@@ -206,6 +208,32 @@ function ModulPage() {
               ))}
             </tbody>
           </table>
+
+          <h2 className="page-break">LAMPIRAN 4 — Lembar Refleksi Pembelajaran</h2>
+          <table className="lkpd-identitas">
+            <tbody>
+              <tr><td className="lkpd-label">Nama Guru</td><td>&nbsp;</td><td className="lkpd-label">Hari/Tanggal</td><td>&nbsp;</td></tr>
+              <tr><td className="lkpd-label">Mata Pelajaran</td><td colSpan={3}>&nbsp;</td></tr>
+            </tbody>
+          </table>
+          {[
+            "Tujuan Pembelajaran",
+            "Bagian pembelajaran yang telah berjalan baik",
+            "Bagian pembelajaran yang perlu diperbaiki",
+            "Partisipasi Siswa",
+            "Perbaikan untuk pertemuan berikutnya",
+          ].map((label) => (
+            <div key={label} className="mt-3">
+              <p><strong>{label}</strong></p>
+              {Array.from({ length: 3 }).map((_, i) => <div key={i} className="lkpd-fill-line" />)}
+            </div>
+          ))}
+          <div className="mt-4 text-xs italic text-muted-foreground">
+            <p><strong>Pertanyaan Panduan Refleksi Guru:</strong></p>
+            <RichText text={hasil.refleksiGuru} />
+            <p className="mt-2"><strong>Pertanyaan Panduan Refleksi Siswa:</strong></p>
+            <RichText text={hasil.refleksiSiswa} />
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -267,8 +295,8 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
   text(form.sekolah.toUpperCase(), { center: true, bold: true, size: 13 });
   if (form.alamatSekolah) text(`Alamat: ${form.alamatSekolah}`, { center: true, size: 9 });
   doc.setLineWidth(0.6); doc.line(margin, y, 210 - margin, y); line(2);
-  text("MODUL AJAR / RENCANA PEMBELAJARAN", { center: true, bold: true, size: 14 });
-  text(hasil.judulModul, { center: true, bold: true, size: 12 });
+  text("MODUL AJAR PEMBELAJARAN MENDALAM", { center: true, bold: true, size: 14 });
+  text(`"${hasil.judulModul}"`, { center: true, bold: true, size: 12 });
   line(2);
   const meta: [string, string][] = [
     ["Guru", form.namaGuru], ["NIP", form.nip || "-"],
@@ -295,8 +323,7 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
     rich(hasil.kemitraanPembelajaran);
   }
   text(`${nextLetter()}. Pemanfaatan Digital`, { bold: true, size: 12 }); rich(hasil.pemanfaatanDigital);
-  text(`${nextLetter()}. Pertanyaan Pemantik`, { bold: true, size: 12 }); rich(hasil.pertanyaanPemantik);
-  text(`${nextLetter()}. Kegiatan Pembelajaran`, { bold: true, size: 12 });
+  text(`${nextLetter()}. Langkah Pembelajaran`, { bold: true, size: 12 });
   hasil.pertemuanData.forEach((p) => {
     text(`Pertemuan ${p.pertemuan} — ${p.topik}`, { bold: true });
     let n = 1;
@@ -305,13 +332,11 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
     text("Kegiatan Penutup:", { bold: true }); rich(p.penutup, n);
     line(2);
   });
-  const blocks2: [string, string][] = [
-    [`${nextLetter()}. Asesmen Formatif`, hasil.asesmenFormatif],
-    [`${nextLetter()}. Asesmen Sumatif`, hasil.asesmenSumatif],
-    [`${nextLetter()}. Refleksi Guru`, hasil.refleksiGuru],
-    [`${nextLetter()}. Refleksi Siswa`, hasil.refleksiSiswa],
-  ];
-  blocks2.forEach(([t, b]) => { text(t, { bold: true, size: 12 }); rich(b); });
+  text(`${nextLetter()}. Asesmen Pembelajaran`, { bold: true, size: 12 });
+  text("Asesmen Awal:", { bold: true, size: 11 });
+  text("Lihat bagian A. Asesmen Awal di atas — dipakai untuk pemetaan pengetahuan awal peserta didik.");
+  text("Asesmen Formatif (pada proses pembelajaran):", { bold: true, size: 11 }); rich(hasil.asesmenFormatif);
+  text("Asesmen Sumatif (pada akhir pembelajaran):", { bold: true, size: 11 }); rich(hasil.asesmenSumatif);
 
   // Tanda tangan sebelum lampiran
   const tgl = new Date(form.tanggalPembuatan).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
@@ -358,5 +383,17 @@ function exportPDF(hasil: ModulHasil, form: ModulForm) {
     text(`Perlu Bimbingan: ${r.perluBimbingan}`);
     line(1);
   });
+  doc.addPage(); y = margin;
+  text("LAMPIRAN 4 — Lembar Refleksi Pembelajaran", { bold: true, size: 13 });
+  text("Nama Guru       : ______________________________     Hari/Tanggal : ______________", { size: 10 });
+  text("Mata Pelajaran  : ______________________________________________________________", { size: 10 });
+  line(2);
+  ["Tujuan Pembelajaran", "Bagian pembelajaran yang telah berjalan baik", "Bagian pembelajaran yang perlu diperbaiki", "Partisipasi Siswa", "Perbaikan untuk pertemuan berikutnya"].forEach((label) => {
+    text(label, { bold: true, size: 11 });
+    for (let i = 0; i < 3; i++) text("__________________________________________________________________", { size: 10 });
+    line(1);
+  });
+  text("Pertanyaan Panduan Refleksi Guru:", { bold: true, size: 10 }); rich(hasil.refleksiGuru);
+  text("Pertanyaan Panduan Refleksi Siswa:", { bold: true, size: 10 }); rich(hasil.refleksiSiswa);
   doc.save(`${hasil.judulModul.replace(/[^\w\s-]/g, "").slice(0, 60)}.pdf`);
 }
