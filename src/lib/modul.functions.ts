@@ -312,6 +312,119 @@ function findMissingFields(h: ModulHasil, jumlahPertemuan: number): string[] {
   return missing;
 }
 
+// ================= Ilustrasi (opsional) =================
+
+type AttachCtx = {
+  supabase: import("@supabase/supabase-js").SupabaseClient;
+  userId: string;
+  modulId: string;
+  apiKey: string;
+};
+
+const IMAGE_MODEL = "google/gemini-3.1-flash-image";
+const IMAGE_STYLE =
+  "Gaya ilustrasi kartun edukatif ramah anak, garis bersih, warna cerah (dominan kuning hangat dengan aksen biru muda), latar polos/pastel, tanpa teks/tulisan pada gambar, komposisi seimbang, cocok dicetak di modul ajar SD/SMP.";
+
+function buildImagePrompt(topik: string, konteks: string, form: ModulFormInput, jenis: "pertemuan" | "lkpd") {
+  const peran = jenis === "pertemuan"
+    ? `Ilustrasi kegiatan pembelajaran di kelas ${form.kelas} untuk mata pelajaran ${form.mapel} tentang "${topik}".`
+    : `Ilustrasi pendukung Lembar Kerja Peserta Didik untuk ${form.mapel} kelas ${form.kelas} bertopik "${topik}".`;
+  return `${peran} Konteks: ${konteks.slice(0, 400)}. ${IMAGE_STYLE}`;
+}
+
+async function generateOneImage(prompt: string, apiKey: string): Promise<Uint8Array | null> {
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: IMAGE_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+        stream: false,
+      }),
+    });
+    if (!res.ok) {
+      console.error("[image gen] http", res.status, await res.text().catch(() => ""));
+      return null;
+    }
+    const body = (await res.json()) as any;
+    // Coba berbagai bentuk respons yang mungkin dikembalikan gateway.
+    const b64 =
+      body?.data?.[0]?.b64_json ??
+      body?.data?.[0]?.b64 ??
+      body?.choices?.[0]?.message?.images?.[0]?.image_url?.url ??
+      body?.choices?.[0]?.message?.content?.find?.((c: any) => c?.type === "image_url")?.image_url?.url ??
+      null;
+    if (!b64) {
+      console.error("[image gen] no image in response", JSON.stringify(body).slice(0, 500));
+      return null;
+    }
+    const raw: string = typeof b64 === "string" ? b64 : "";
+    const payload = raw.startsWith("data:") ? raw.slice(raw.indexOf(",") + 1) : raw;
+    // decode base64 → Uint8Array
+    const bin = atob(payload);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  } catch (e) {
+    console.error("[image gen] error", e);
+    return null;
+  }
+}
+
+async function uploadImage(ctx: AttachCtx, kind: "pertemuan" | "lkpd", n: number, bytes: Uint8Array): Promise<string> {
+  const path = `${ctx.userId}/${ctx.modulId}/${kind}-${n}-${Date.now()}.png`;
+  const { error: upErr } = await ctx.supabase.storage
+    .from("modul-images")
+    .upload(path, bytes, { contentType: "image/png", upsert: true });
+  if (upErr) throw new Error(`upload gagal: ${upErr.message}`);
+  // Signed URL panjang (≈10 tahun) supaya bertahan seperti URL publik.
+  const { data: signed, error: signErr } = await ctx.supabase.storage
+    .from("modul-images")
+    .createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
+  if (signErr || !signed) throw new Error(`signed url gagal: ${signErr?.message ?? "unknown"}`);
+  return signed.signedUrl;
+}
+
+async function attachIlustrasi(hasil: ModulHasil, form: ModulFormInput, ctx: AttachCtx): Promise<ModulHasil> {
+  // Pertemuan: 1 ilustrasi per pertemuan (bagian tahapan pembelajaran).
+  const pertemuanData = await Promise.all(
+    hasil.pertemuanData.map(async (p) => {
+      const prompt = buildImagePrompt(p.topik, p.inti, form, "pertemuan");
+      const bytes = await generateOneImage(prompt, ctx.apiKey);
+      if (!bytes) return { ...p, gambarPrompt: prompt };
+      try {
+        const url = await uploadImage(ctx, "pertemuan", p.pertemuan, bytes);
+        return { ...p, gambarUrl: url, gambarPrompt: prompt };
+      } catch (e) {
+        console.error("[attachIlustrasi] pertemuan upload", e);
+        return { ...p, gambarPrompt: prompt };
+      }
+    }),
+  );
+
+  // LKPD: 1 ilustrasi per lembar kerja jika diaktifkan.
+  const lkpdData = form.tambahLK
+    ? await Promise.all(
+        hasil.lkpdData.map(async (l) => {
+          const prompt = buildImagePrompt(l.judul, l.aktivitas, form, "lkpd");
+          const bytes = await generateOneImage(prompt, ctx.apiKey);
+          if (!bytes) return { ...l, gambarPrompt: prompt };
+          try {
+            const url = await uploadImage(ctx, "lkpd", l.pertemuan, bytes);
+            return { ...l, gambarUrl: url, gambarPrompt: prompt };
+          } catch (e) {
+            console.error("[attachIlustrasi] lkpd upload", e);
+            return { ...l, gambarPrompt: prompt };
+          }
+        }),
+      )
+    : hasil.lkpdData;
+
+  return { ...hasil, pertemuanData, lkpdData };
+}
+
 export const generateModul = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ModulFormSchema.parse(input))
