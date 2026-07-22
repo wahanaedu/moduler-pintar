@@ -60,8 +60,11 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Akun dibuat. Silakan cek email jika verifikasi diperlukan.");
-        navigate({ to: "/dashboard" });
+        // Sign the user out immediately — akun akan aktif setelah pembayaran & persetujuan admin.
+        await supabase.auth.signOut();
+        toast.success("Akun terdaftar. Silakan selesaikan pembayaran untuk aktivasi.");
+        window.location.href = "https://lynk.id/alunagra/lq48r3m5rlw9";
+        return;
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
