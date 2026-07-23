@@ -199,3 +199,24 @@ export const adminGenerateTempPassword = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, newPassword };
   });
+
+export const adminDeleteUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const adminFlag = await checkIsAdmin(context.userId);
+    if (!adminFlag) throw new Error("Forbidden: admin only");
+    if (data.userId === context.userId) throw new Error("Tidak dapat menghapus akun Anda sendiri");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Prevent deleting other admins
+    const { data: targetRoles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.userId);
+    if ((targetRoles ?? []).some((r) => r.role === "admin")) {
+      throw new Error("Tidak dapat menghapus akun admin");
+    }
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
