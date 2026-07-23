@@ -2,13 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { listAllUsers, setUserApproval, adminCreateUser } from "@/lib/admin.functions";
+import { listAllUsers, setUserApproval, adminCreateUser, adminResetUserPassword, adminGenerateTempPassword } from "@/lib/admin.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ShieldCheck, ShieldOff, CheckCircle2, Users, UserPlus, Eye, EyeOff } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldOff, CheckCircle2, Users, UserPlus, Eye, EyeOff, KeyRound, Copy, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -134,40 +134,122 @@ type UserRowData = {
 
 function UserRow({ user, onToggle, pending }: { user: UserRowData; onToggle: (approved: boolean) => void; pending: boolean }) {
   const isAdmin = user.roles.includes("admin");
+  const [resetOpen, setResetOpen] = useState(false);
+  const [newPw, setNewPw] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [generated, setGenerated] = useState<string | null>(null);
+  const resetFn = useServerFn(adminResetUserPassword);
+  const genFn = useServerFn(adminGenerateTempPassword);
+
+  const resetMut = useMutation({
+    mutationFn: () => resetFn({ data: { userId: user.id, newPassword: newPw } }),
+    onSuccess: () => {
+      toast.success("Kata sandi berhasil diperbarui");
+      setGenerated(newPw);
+      setNewPw("");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const genMut = useMutation({
+    mutationFn: () => genFn({ data: { userId: user.id } }),
+    onSuccess: (r: { newPassword: string }) => {
+      toast.success("Kata sandi sementara dibuat");
+      setGenerated(r.newPassword);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  async function copyGenerated() {
+    if (!generated) return;
+    try {
+      await navigator.clipboard.writeText(generated);
+      toast.success("Kata sandi disalin ke clipboard");
+    } catch {
+      toast.error("Gagal menyalin");
+    }
+  }
+
   return (
     <Card>
-      <CardContent className="p-4 flex items-center justify-between gap-4 flex-wrap">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold truncate">{user.full_name || user.email}</h3>
-            {isAdmin && <Badge className="bg-primary/10 text-primary hover:bg-primary/20">Admin</Badge>}
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-semibold truncate">{user.full_name || user.email}</h3>
+              {isAdmin && <Badge className="bg-primary/10 text-primary hover:bg-primary/20">Admin</Badge>}
+              {user.approved ? (
+                <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">Disetujui</Badge>
+              ) : (
+                <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-300">Menunggu</Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+            {(user.sekolah || user.kabupaten) && (
+              <p className="text-xs text-muted-foreground mt-1 truncate">
+                {[user.sekolah, user.kabupaten, user.provinsi].filter(Boolean).join(" · ")}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Terdaftar {new Date(user.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+            </p>
+          </div>
+          <div className="shrink-0 flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => { setResetOpen((v) => !v); setGenerated(null); }}>
+              <KeyRound className="h-4 w-4 mr-1.5" />Reset Sandi
+            </Button>
             {user.approved ? (
-              <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">Disetujui</Badge>
+              <Button variant="outline" size="sm" disabled={pending || isAdmin} onClick={() => onToggle(false)}>
+                <ShieldOff className="h-4 w-4 mr-1.5" />Cabut
+              </Button>
             ) : (
-              <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-300">Menunggu</Badge>
+              <Button size="sm" disabled={pending} onClick={() => onToggle(true)}>
+                <CheckCircle2 className="h-4 w-4 mr-1.5" />Setujui
+              </Button>
             )}
           </div>
-          <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-          {(user.sekolah || user.kabupaten) && (
-            <p className="text-xs text-muted-foreground mt-1 truncate">
-              {[user.sekolah, user.kabupaten, user.provinsi].filter(Boolean).join(" · ")}
+        </div>
+
+        {resetOpen && (
+          <div className="rounded-md border bg-muted/40 p-3 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Demi keamanan, kata sandi pengguna <strong>tidak dapat dilihat</strong> (tersimpan terenkripsi).
+              Anda dapat menetapkan kata sandi baru atau membuat sandi acak sementara untuk pengguna ini.
             </p>
-          )}
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Terdaftar {new Date(user.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
-          </p>
-        </div>
-        <div className="shrink-0">
-          {user.approved ? (
-            <Button variant="outline" size="sm" disabled={pending || isAdmin} onClick={() => onToggle(false)}>
-              <ShieldOff className="h-4 w-4 mr-1.5" />Cabut
-            </Button>
-          ) : (
-            <Button size="sm" disabled={pending} onClick={() => onToggle(true)}>
-              <CheckCircle2 className="h-4 w-4 mr-1.5" />Setujui
-            </Button>
-          )}
-        </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Input
+                  type={showPw ? "text" : "password"}
+                  value={newPw}
+                  onChange={(e) => setNewPw(e.target.value)}
+                  placeholder="Kata sandi baru (min. 6 karakter)"
+                  className="pr-10"
+                />
+                <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground" aria-label={showPw ? "Sembunyikan" : "Tampilkan"}>
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <Button size="sm" disabled={newPw.length < 6 || resetMut.isPending} onClick={() => resetMut.mutate()}>
+                {resetMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Simpan
+              </Button>
+              <Button size="sm" variant="secondary" disabled={genMut.isPending} onClick={() => genMut.mutate()}>
+                {genMut.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wand2 className="h-4 w-4 mr-2" />}
+                Buat Sandi Acak
+              </Button>
+            </div>
+            {generated && (
+              <div className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-1">
+                <p className="text-xs text-muted-foreground">Kata sandi baru (salin dan berikan ke pengguna — hanya ditampilkan sekali):</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 font-mono text-sm break-all">{generated}</code>
+                  <Button size="sm" variant="outline" onClick={copyGenerated}>
+                    <Copy className="h-4 w-4 mr-1.5" />Salin
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
