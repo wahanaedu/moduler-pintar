@@ -34,7 +34,7 @@ DATA MODUL:
 - Alokasi waktu per pertemuan: ${form.alokasiWaktu}
 - Jumlah pertemuan: TEPAT ${form.jumlahPertemuan}
 - Model Pembelajaran: ${form.modelPembelajaran}
-- Dimensi Profil Lulusan Pancasila: ${form.profilLulusan.join(", ")}
+- Dimensi Profil Lulusan: ${form.profilLulusan.join(", ")}
 
 INSTRUKSI ISI TIAP FIELD (semua wajib terisi konten nyata, minimal 2–4 kalimat kecuali disebut lain; DILARANG placeholder "...", "TBD", "sesuai kebutuhan", atau kalimat generik yang bisa dipakai untuk materi apa pun):
 

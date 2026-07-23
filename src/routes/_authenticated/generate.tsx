@@ -275,7 +275,7 @@ function GeneratePage() {
           </div>
         </Section>
 
-        <Section title="Dimensi Profil Lulusan Pancasila">
+        <Section title="Dimensi Profil Lulusan">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {PILIHAN_PROFIL_LULUSAN.map((p) => {
               const checked = form.profilLulusan.includes(p);
