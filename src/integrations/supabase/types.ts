@@ -80,9 +80,12 @@ export type Database = {
           kelas_changes_remaining: number
           kelas_terkunci: string | null
           kepala_sekolah: string | null
+          mapel_changes_remaining: number
+          mapel_terkunci: string | null
           nip: string | null
           nip_kepala_sekolah: string | null
           provinsi: string | null
+          role_chosen: boolean
           sekolah: string | null
           tingkat_sekolah: string | null
           updated_at: string
@@ -98,9 +101,12 @@ export type Database = {
           kelas_changes_remaining?: number
           kelas_terkunci?: string | null
           kepala_sekolah?: string | null
+          mapel_changes_remaining?: number
+          mapel_terkunci?: string | null
           nip?: string | null
           nip_kepala_sekolah?: string | null
           provinsi?: string | null
+          role_chosen?: boolean
           sekolah?: string | null
           tingkat_sekolah?: string | null
           updated_at?: string
@@ -116,9 +122,12 @@ export type Database = {
           kelas_changes_remaining?: number
           kelas_terkunci?: string | null
           kepala_sekolah?: string | null
+          mapel_changes_remaining?: number
+          mapel_terkunci?: string | null
           nip?: string | null
           nip_kepala_sekolah?: string | null
           provinsi?: string | null
+          role_chosen?: boolean
           sekolah?: string | null
           tingkat_sekolah?: string | null
           updated_at?: string
