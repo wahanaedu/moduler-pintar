@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { generateModul, getKelasLock, setKelasLock } from "@/lib/modul.functions";
+import { generateModul, getMyLock, setKelasLock, setMapelLock } from "@/lib/modul.functions";
 import { PILIHAN_MAPEL, PILIHAN_KELAS, PILIHAN_MODEL_PEMBELAJARAN, PILIHAN_PROFIL_LULUSAN, PROFIL_MATERI_DEFAULT } from "@/lib/modul-constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,12 +31,13 @@ function faseForKelas(kelas: string): string {
 function GeneratePage() {
   const navigate = useNavigate();
   const gen = useServerFn(generateModul);
-  const fetchKelas = useServerFn(getKelasLock);
+  const fetchLock = useServerFn(getMyLock);
   const saveKelas = useServerFn(setKelasLock);
+  const saveMapel = useServerFn(setMapelLock);
   const qc = useQueryClient();
-  const { data: kelasLock } = useQuery({
-    queryKey: ["my-kelas-lock"],
-    queryFn: () => fetchKelas(),
+  const { data: lock } = useQuery({
+    queryKey: ["my-lock"],
+    queryFn: () => fetchLock(),
   });
 
   const [form, setForm] = useState({
@@ -64,21 +65,40 @@ function GeneratePage() {
 
   // Sinkronkan kelas dari kunci profil.
   useEffect(() => {
-    if (kelasLock?.kelas && kelasLock.kelas !== form.kelas) {
-      setForm((f) => ({ ...f, kelas: kelasLock.kelas!, fase: faseForKelas(kelasLock.kelas!) }));
+    if (lock?.kelas && lock.jabatan === "guru_kelas" && lock.kelas !== form.kelas) {
+      setForm((f) => ({ ...f, kelas: lock.kelas!, fase: faseForKelas(lock.kelas!) }));
     }
-  }, [kelasLock?.kelas]);
+    if (lock?.mapel && lock.jabatan === "guru_mapel" && lock.mapel !== form.mapel) {
+      const def = PROFIL_MATERI_DEFAULT[lock.mapel];
+      setForm((f) => ({ ...f, mapel: lock.mapel!, materi: def?.materi ?? f.materi }));
+    }
+    if (lock?.jabatan && lock.jabatan !== form.jabatan) {
+      setForm((f) => ({ ...f, jabatan: lock.jabatan! }));
+    }
+  }, [lock?.kelas, lock?.mapel, lock?.jabatan]);
 
-  const [changeOpen, setChangeOpen] = useState(false);
+  const [changeKelasOpen, setChangeKelasOpen] = useState(false);
   const [newKelas, setNewKelas] = useState<string>("");
-  const changeMutation = useMutation({
+  const changeKelasMutation = useMutation({
     mutationFn: async (v: string) => saveKelas({ data: { kelas: v } }),
     onSuccess: (res) => {
       toast.success(`Kelas diubah menjadi ${res.kelas}. Sisa perubahan: ${res.changesRemaining}.`);
-      qc.invalidateQueries({ queryKey: ["my-kelas-lock"] });
-      setChangeOpen(false);
+      qc.invalidateQueries({ queryKey: ["my-lock"] });
+      setChangeKelasOpen(false);
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Gagal mengubah kelas"),
+  });
+
+  const [changeMapelOpen, setChangeMapelOpen] = useState(false);
+  const [newMapel, setNewMapel] = useState<string>("");
+  const changeMapelMutation = useMutation({
+    mutationFn: async (v: string) => saveMapel({ data: { mapel: v } }),
+    onSuccess: (res) => {
+      toast.success(`Mata pelajaran diubah menjadi ${res.mapel}. Sisa perubahan: ${res.changesRemaining}.`);
+      qc.invalidateQueries({ queryKey: ["my-lock"] });
+      setChangeMapelOpen(false);
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Gagal mengubah mapel"),
   });
 
   function upd<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
@@ -103,7 +123,7 @@ function GeneratePage() {
     upd("mapel", v);
     if (def) {
       upd("materi", def.materi);
-      if (!kelasLock?.kelas) upd("fase", def.fase);
+      if (!(lock?.kelas && lock.jabatan === "guru_kelas")) upd("fase", def.fase);
     }
   }
 
@@ -159,38 +179,69 @@ function GeneratePage() {
         <Section title="Rencana Pembelajaran">
           <div className="grid md:grid-cols-2 gap-4">
             <Field label="Mata Pelajaran" required>
-              <Select value={form.mapel} onValueChange={onMapelChange}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PILIHAN_MAPEL.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
-            <Field label="Kelas" required>
-              {kelasLock?.kelas ? (
+              {lock?.mapel && lock.jabatan === "guru_mapel" ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 h-10 px-3 rounded-md border bg-muted/50 text-sm">
                     <Lock className="h-4 w-4 text-primary" />
-                    <span className="font-medium">{kelasLock.kelas}</span>
+                    <span className="font-medium">{lock.mapel}</span>
                     <span className="text-xs text-muted-foreground ml-auto">
-                      {kelasLock.changesRemaining > 0
-                        ? `Sisa perubahan: ${kelasLock.changesRemaining}`
+                      {lock.mapelChangesRemaining > 0
+                        ? `Sisa perubahan: ${lock.mapelChangesRemaining}`
                         : "Terkunci permanen"}
                     </span>
                   </div>
-                  {kelasLock.changesRemaining > 0 && !changeOpen && (
-                    <Button type="button" variant="outline" size="sm" onClick={() => setChangeOpen(true)}>
+                  {lock.mapelChangesRemaining > 0 && !changeMapelOpen && (
+                    <Button type="button" variant="outline" size="sm" onClick={() => setChangeMapelOpen(true)}>
+                      Ubah mata pelajaran (sekali saja)
+                    </Button>
+                  )}
+                  {changeMapelOpen && (
+                    <div className="flex gap-2 items-center">
+                      <Select value={newMapel} onValueChange={setNewMapel}>
+                        <SelectTrigger><SelectValue placeholder="Pilih mapel baru…" /></SelectTrigger>
+                        <SelectContent>{PILIHAN_MAPEL.filter((m) => m !== lock.mapel).map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Button type="button" size="sm" disabled={!newMapel || changeMapelMutation.isPending} onClick={() => changeMapelMutation.mutate(newMapel)}>
+                        Simpan
+                      </Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => setChangeMapelOpen(false)}>Batal</Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Select value={form.mapel} onValueChange={onMapelChange}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{PILIHAN_MAPEL.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                </Select>
+              )}
+            </Field>
+            <Field label="Kelas" required>
+              {lock?.kelas && lock.jabatan === "guru_kelas" ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 h-10 px-3 rounded-md border bg-muted/50 text-sm">
+                    <Lock className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{lock.kelas}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {lock.kelasChangesRemaining > 0
+                        ? `Sisa perubahan: ${lock.kelasChangesRemaining}`
+                        : "Terkunci permanen"}
+                    </span>
+                  </div>
+                  {lock.kelasChangesRemaining > 0 && !changeKelasOpen && (
+                    <Button type="button" variant="outline" size="sm" onClick={() => setChangeKelasOpen(true)}>
                       Ubah kelas (sekali saja)
                     </Button>
                   )}
-                  {changeOpen && (
+                  {changeKelasOpen && (
                     <div className="flex gap-2 items-center">
                       <Select value={newKelas} onValueChange={setNewKelas}>
                         <SelectTrigger><SelectValue placeholder="Pilih kelas baru…" /></SelectTrigger>
-                        <SelectContent>{PILIHAN_KELAS.filter((k) => k !== kelasLock.kelas).map((k) => <SelectItem key={k} value={k}>{k}</SelectItem>)}</SelectContent>
+                        <SelectContent>{PILIHAN_KELAS.filter((k) => k !== lock.kelas).map((k) => <SelectItem key={k} value={k}>{k}</SelectItem>)}</SelectContent>
                       </Select>
-                      <Button type="button" size="sm" disabled={!newKelas || changeMutation.isPending} onClick={() => changeMutation.mutate(newKelas)}>
+                      <Button type="button" size="sm" disabled={!newKelas || changeKelasMutation.isPending} onClick={() => changeKelasMutation.mutate(newKelas)}>
                         Simpan
                       </Button>
-                      <Button type="button" size="sm" variant="ghost" onClick={() => setChangeOpen(false)}>Batal</Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => setChangeKelasOpen(false)}>Batal</Button>
                     </div>
                   )}
                 </div>

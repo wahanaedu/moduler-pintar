@@ -657,3 +657,75 @@ export const setKelasLock = createServerFn({ method: "POST" })
     if (updErr) throw new Error(updErr.message);
     return { ok: true, kelas: data.kelas, changesRemaining: nextRemaining };
   });
+
+export const getMyLock = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("profiles")
+      .select("jabatan, role_chosen, kelas_terkunci, kelas_changes_remaining, mapel_terkunci, mapel_changes_remaining")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return {
+      jabatan: (data?.jabatan as "guru_kelas" | "guru_mapel" | null) ?? null,
+      roleChosen: Boolean(data?.role_chosen),
+      kelas: (data?.kelas_terkunci as string | null) ?? null,
+      kelasChangesRemaining: (data?.kelas_changes_remaining as number | null) ?? 1,
+      mapel: (data?.mapel_terkunci as string | null) ?? null,
+      mapelChangesRemaining: (data?.mapel_changes_remaining as number | null) ?? 1,
+    };
+  });
+
+export const setRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ jabatan: z.enum(["guru_kelas", "guru_mapel"]) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: current, error: readErr } = await context.supabase
+      .from("profiles")
+      .select("role_chosen")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (current?.role_chosen) {
+      throw new Error("Peran sudah dipilih sebelumnya dan tidak dapat diubah. Hubungi admin bila perlu ganti.");
+    }
+    const { error: updErr } = await context.supabase
+      .from("profiles")
+      .update({ jabatan: data.jabatan, role_chosen: true })
+      .eq("id", context.userId);
+    if (updErr) throw new Error(updErr.message);
+    return { ok: true, jabatan: data.jabatan };
+  });
+
+export const setMapelLock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ mapel: z.string().trim().min(1) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: current, error: readErr } = await context.supabase
+      .from("profiles")
+      .select("mapel_terkunci, mapel_changes_remaining")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+
+    const currentMapel = (current?.mapel_terkunci as string | null) ?? null;
+    const remaining = (current?.mapel_changes_remaining as number | null) ?? 1;
+
+    if (currentMapel === data.mapel) return { ok: true, mapel: data.mapel, changesRemaining: remaining };
+
+    let nextRemaining = remaining;
+    if (currentMapel !== null) {
+      if (remaining <= 0) throw new Error("Mata pelajaran sudah diubah sebelumnya dan tidak dapat diubah lagi.");
+      nextRemaining = remaining - 1;
+    }
+
+    const { error: updErr } = await context.supabase
+      .from("profiles")
+      .update({ mapel_terkunci: data.mapel, mapel_changes_remaining: nextRemaining })
+      .eq("id", context.userId);
+    if (updErr) throw new Error(updErr.message);
+    return { ok: true, mapel: data.mapel, changesRemaining: nextRemaining };
+  });
