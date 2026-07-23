@@ -2,13 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { listAllUsers, setUserApproval, adminCreateUser, adminResetUserPassword, adminGenerateTempPassword } from "@/lib/admin.functions";
+import { listAllUsers, setUserApproval, adminCreateUser, adminResetUserPassword, adminGenerateTempPassword, adminDeleteUser } from "@/lib/admin.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ShieldCheck, ShieldOff, CheckCircle2, Users, UserPlus, Eye, EyeOff, KeyRound, Copy, Wand2 } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldOff, CheckCircle2, Users, UserPlus, Eye, EyeOff, KeyRound, Copy, Wand2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -140,6 +140,8 @@ function UserRow({ user, onToggle, pending }: { user: UserRowData; onToggle: (ap
   const [generated, setGenerated] = useState<string | null>(null);
   const resetFn = useServerFn(adminResetUserPassword);
   const genFn = useServerFn(adminGenerateTempPassword);
+  const deleteFn = useServerFn(adminDeleteUser);
+  const qc = useQueryClient();
 
   const resetMut = useMutation({
     mutationFn: () => resetFn({ data: { userId: user.id, newPassword: newPw } }),
@@ -158,6 +160,21 @@ function UserRow({ user, onToggle, pending }: { user: UserRowData; onToggle: (ap
     },
     onError: (e: Error) => toast.error(e.message),
   });
+  const deleteMut = useMutation({
+    mutationFn: () => deleteFn({ data: { userId: user.id } }),
+    onSuccess: () => {
+      toast.success("Pengguna dihapus");
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function confirmDelete() {
+    const label = user.full_name || user.email || "pengguna ini";
+    if (window.confirm(`Hapus akun "${label}" secara permanen? Tindakan ini tidak dapat dibatalkan.`)) {
+      deleteMut.mutate();
+    }
+  }
 
   async function copyGenerated() {
     if (!generated) return;
@@ -206,6 +223,16 @@ function UserRow({ user, onToggle, pending }: { user: UserRowData; onToggle: (ap
                 <CheckCircle2 className="h-4 w-4 mr-1.5" />Setujui
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isAdmin || deleteMut.isPending}
+              onClick={confirmDelete}
+              className="text-destructive hover:text-destructive"
+            >
+              {deleteMut.isPending ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
+              Hapus
+            </Button>
           </div>
         </div>
 
