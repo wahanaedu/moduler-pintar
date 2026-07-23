@@ -139,3 +139,58 @@ export const adminCreateUser = createServerFn({ method: "POST" })
       .eq("id", newId);
     return { ok: true, userId: newId };
   });
+
+export const adminResetUserPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        userId: z.string().uuid(),
+        newPassword: z
+          .string()
+          .min(6, "Kata sandi minimal 6 karakter")
+          .max(128, "Maksimal 128 karakter"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const adminFlag = await checkIsAdmin(context.userId);
+    if (!adminFlag) throw new Error("Forbidden: admin only");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password: data.newPassword,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminGenerateTempPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const adminFlag = await checkIsAdmin(context.userId);
+    if (!adminFlag) throw new Error("Forbidden: admin only");
+    // Generate a random password that meets the app's rules
+    // (min 6, uppercase, digit, symbol).
+    const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    const lower = "abcdefghijkmnopqrstuvwxyz";
+    const digits = "23456789";
+    const symbols = "!@#$%*?";
+    const all = upper + lower + digits + symbols;
+    const pick = (src: string) => src[Math.floor(Math.random() * src.length)];
+    const chars = [pick(upper), pick(lower), pick(digits), pick(symbols)];
+    for (let i = 0; i < 8; i++) chars.push(pick(all));
+    // shuffle
+    for (let i = chars.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+    const newPassword = chars.join("");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password: newPassword,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true, newPassword };
+  });
