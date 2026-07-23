@@ -160,7 +160,12 @@ export const adminResetUserPassword = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       password: data.newPassword,
     });
-    if (error) throw new Error(error.message);
+    if (error) {
+      const msg = /weak|pwned|known/i.test(error.message)
+        ? "Kata sandi terlalu lemah atau sudah bocor di internet. Gunakan kombinasi huruf besar, kecil, angka, dan simbol yang unik (mis. 8+ karakter acak)."
+        : error.message;
+      throw new Error(msg);
+    }
     return { ok: true };
   });
 
